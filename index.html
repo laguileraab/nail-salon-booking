@@ -14,8 +14,8 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://nail-salon-booking.vercel.app" />
     <meta property="og:image" content="/og-image.jpg" />
-    <!-- Security headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.vercel.app; font-src 'self' data:;" />
+    <!-- Security headers with relaxed CSP for production -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.vercel.app https://api.sendgrid.com; font-src 'self' https://fonts.gstatic.com data:;" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />

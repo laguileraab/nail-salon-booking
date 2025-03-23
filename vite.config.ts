@@ -14,8 +14,8 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
-          name: 'Beautiful Nails Salon',
-          short_name: 'Nails Salon',
+          name: 'MärchenNails',
+          short_name: 'MärchenNails',
           description: 'Book your nail salon appointments online',
           theme_color: '#ffffff',
           icons: [
@@ -85,9 +85,13 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
+    base: "/",  // Ensure proper base path for assets
     server: {
       port: 3000,
       open: true
+    },
+    preview: {
+      port: 3000
     }
   };
 });

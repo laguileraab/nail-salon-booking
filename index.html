@@ -6,16 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Premium nail salon services - Book your manicure, pedicure, and nail art appointments online" />
     <meta name="keywords" content="nail salon, manicure, pedicure, nail art, nail booking, beauty salon" />
-    <meta name="author" content="Nail Salon Booking" />
+    <meta name="author" content="MärchenNails" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#f8b4d9" />
-    <meta property="og:title" content="Nail Salon Booking - Premium Nail Services" />
+    <meta property="og:title" content="MärchenNails - Premium Nail Services" />
     <meta property="og:description" content="Book your next nail appointment online - manicures, pedicures, and nail art services" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://nail-salon-booking.vercel.app" />
+    <meta property="og:url" content="https://maerchennails.com" />
     <meta property="og:image" content="/og-image.jpg" />
-    <!-- Security headers with relaxed CSP for production -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.vercel.app https://api.sendgrid.com; font-src 'self' https://fonts.gstatic.com data:;" />
+    <!-- Much more permissive CSP for production to ensure app works properly -->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
@@ -23,7 +23,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <title>Nail Salon Booking | Premium Nail Services</title>
+    <!-- Base URL for client-side routing -->
+    <base href="/" />
+    <title>MärchenNails | Premium Nail Services</title>
   </head>
   <body>
     <div id="root"></div>
@@ -31,7 +33,7 @@
     <noscript>
       <div style="text-align: center; padding: 2rem; font-family: 'Poppins', sans-serif;">
         <h1>JavaScript is required</h1>
-        <p>Please enable JavaScript to use the Nail Salon Booking application.</p>
+        <p>Please enable JavaScript to use the MärchenNails booking application.</p>
       </div>
     </noscript>
   </body>

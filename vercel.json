@@ -4,12 +4,6 @@
   "outputDirectory": "dist",
   "routes": [
     { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "env": {
-    "VITE_SUPABASE_URL": "@supabase_url",
-    "VITE_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "VITE_APP_ENV": "production",
-    "VITE_APP_URL": "https://nail-salon-booking.vercel.app"
-  }
+    { "src": "/(.*)" , "dest": "/index.html" }
+  ]
 }

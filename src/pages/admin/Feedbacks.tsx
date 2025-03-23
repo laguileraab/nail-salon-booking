@@ -28,18 +28,14 @@ const Feedbacks = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRating, setFilterRating] = useState<number | null>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' }>({ 
-    key: 'created_at', 
-    direction: 'descending' 
-  });
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Fetch feedbacks data
   useEffect(() => {
     const fetchFeedbacks = async () => {
-      setIsLoading(true);
       try {
+        setIsLoading(true);
         const { data, error } = await supabase
           .from('feedback')
           .select(`
@@ -55,7 +51,29 @@ const Feedbacks = () => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setFeedbacks(data || []);
+        
+        // Transform the data to match the Feedback type
+        const transformedData = data?.map((item: any) => ({
+          id: item.id,
+          user_id: item.user_id,
+          appointment_id: item.appointment_id,
+          rating: item.rating,
+          comment: item.comment,
+          created_at: item.created_at,
+          profile: item.profile ? {
+            first_name: item.profile.first_name,
+            last_name: item.profile.last_name,
+            email: item.profile.email
+          } : undefined,
+          appointment: item.appointment ? {
+            start_time: item.appointment.start_time,
+            service: item.appointment.service ? {
+              name: item.appointment.service.name
+            } : undefined
+          } : undefined
+        })) as Feedback[];
+        
+        setFeedbacks(transformedData || []);
       } catch (error: any) {
         console.error('Error fetching feedbacks:', error.message);
         toast.error('Failed to load feedbacks');
@@ -75,41 +93,15 @@ const Feedbacks = () => {
     setFilterRating(rating);
   };
 
-  const handleSort = (key: string) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
+  const handleViewFeedback = (feedback: Feedback) => {
+    setSelectedFeedback(feedback);
+    setIsDetailModalOpen(true);
   };
 
-  const sortedFeedbacks = () => {
-    const sorted = [...feedbacks];
-    sorted.sort((a, b) => {
-      if (a[sortConfig.key as keyof Feedback] < b[sortConfig.key as keyof Feedback]) {
-        return sortConfig.direction === 'ascending' ? -1 : 1;
-      }
-      if (a[sortConfig.key as keyof Feedback] > b[sortConfig.key as keyof Feedback]) {
-        return sortConfig.direction === 'ascending' ? 1 : -1;
-      }
-      return 0;
-    });
-    return sorted;
+  const calculateRatingPercentage = (rating: number) => {
+    const count = feedbacks.filter(feedback => feedback.rating === rating).length;
+    return feedbacks.length ? Math.round((count / feedbacks.length) * 100) : 0;
   };
-
-  const filteredFeedbacks = sortedFeedbacks().filter(feedback => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
-      feedback.profile?.first_name.toLowerCase().includes(searchLower) ||
-      feedback.profile?.last_name.toLowerCase().includes(searchLower) ||
-      feedback.profile?.email.toLowerCase().includes(searchLower) ||
-      feedback.comment.toLowerCase().includes(searchLower) ||
-      feedback.appointment?.service?.name.toLowerCase().includes(searchLower);
-    
-    const matchesRating = filterRating === null || feedback.rating === filterRating;
-    
-    return matchesSearch && matchesRating;
-  });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -131,29 +123,34 @@ const Feedbacks = () => {
       ));
   };
 
-  const handleViewFeedback = (feedback: Feedback) => {
-    setSelectedFeedback(feedback);
-    setIsDetailModalOpen(true);
+  const sortedFeedbacks = () => {
+    const sorted = [...feedbacks];
+    return sorted;
   };
 
-  const getAverageRating = () => {
-    if (feedbacks.length === 0) return 0;
-    const sum = feedbacks.reduce((acc, feedback) => acc + feedback.rating, 0);
-    return (sum / feedbacks.length).toFixed(1);
+  const filteredFeedbacks = sortedFeedbacks().filter(feedback => {
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      feedback.profile?.first_name?.toLowerCase().includes(searchLower) ||
+      feedback.profile?.last_name?.toLowerCase().includes(searchLower) ||
+      feedback.profile?.email?.toLowerCase().includes(searchLower) ||
+      feedback.comment.toLowerCase().includes(searchLower) ||
+      feedback.appointment?.service?.name?.toLowerCase().includes(searchLower);
+    
+    const matchesRating = filterRating === null || feedback.rating === filterRating;
+    
+    return matchesSearch && matchesRating;
+  });
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedFeedback(null);
   };
 
-  const getRatingDistribution = () => {
-    const distribution = [0, 0, 0, 0, 0]; // 5 elements for ratings 1-5
-    feedbacks.forEach(feedback => {
-      distribution[feedback.rating - 1]++;
-    });
-    return distribution;
-  };
-
-  const calculateRatingPercentage = (rating: number) => {
-    const count = feedbacks.filter(feedback => feedback.rating === rating).length;
-    return feedbacks.length ? Math.round((count / feedbacks.length) * 100) : 0;
-  };
+  // Average rating calculation
+  const averageRating = feedbacks.length ? 
+    (feedbacks.reduce((acc, curr) => acc + curr.rating, 0) / feedbacks.length).toFixed(1) : 
+    '0.0';
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -187,7 +184,7 @@ const Feedbacks = () => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Average Rating</dt>
                   <dd>
-                    <div className="text-lg font-medium text-gray-900">{getAverageRating()} / 5.0</div>
+                    <div className="text-lg font-medium text-gray-900">{averageRating} / 5.0</div>
                   </dd>
                 </dl>
               </div>
@@ -372,7 +369,7 @@ const Feedbacks = () => {
                 <button
                   type="button"
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-accent-600 text-base font-medium text-white hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={() => setIsDetailModalOpen(false)}
+                  onClick={handleCloseDetailModal}
                 >
                   Close
                 </button>

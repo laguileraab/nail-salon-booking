@@ -31,7 +31,7 @@ import AdminPromotions from './pages/admin/Promotions';
 import AdminSettings from './pages/admin/Settings';
 
 // Protected route component
-const ProtectedRoute = ({ children, requireAdmin = false }: { children: JSX.Element, requireAdmin?: boolean }) => {
+const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactElement, requireAdmin?: boolean }) => {
   const { user, isLoading, isAdmin } = useAuth();
   
   if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;

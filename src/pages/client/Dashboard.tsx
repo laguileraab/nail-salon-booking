@@ -28,41 +28,42 @@ const Dashboard = () => {
       setIsLoading(true);
 
       try {
-        // Fetch upcoming appointments
         const { data: upcomingData, error: upcomingError } = await supabase
           .from('appointments')
-          .select(`
-            id,
-            start_time,
-            status,
-            services:service_id (name, price, duration)
-          `)
+          .select('id, start_time, status, services(name, price, duration)')
           .eq('user_id', profile.id)
-          .eq('status', 'scheduled')
           .gte('start_time', new Date().toISOString())
           .order('start_time', { ascending: true })
-          .limit(5);
+          .limit(10);
 
-        if (upcomingError) throw upcomingError;
-
-        // Fetch past appointments
         const { data: pastData, error: pastError } = await supabase
           .from('appointments')
-          .select(`
-            id,
-            start_time,
-            status,
-            services:service_id (name, price, duration)
-          `)
+          .select('id, start_time, status, services(name, price, duration)')
           .eq('user_id', profile.id)
-          .or(`status.eq.completed,status.eq.canceled`)
+          .lt('start_time', new Date().toISOString())
           .order('start_time', { ascending: false })
-          .limit(5);
+          .limit(10);
 
+        if (upcomingError) throw upcomingError;
         if (pastError) throw pastError;
 
-        setUpcoming(upcomingData || []);
-        setPast(pastData || []);
+        // Transform the data to match the Appointment type
+        const transformUpcoming = upcomingData?.map(appt => ({
+          id: appt.id,
+          start_time: appt.start_time,
+          status: appt.status,
+          service: appt.services || [], // Convert services array to service property
+        })) || [];
+
+        const transformPast = pastData?.map(appt => ({
+          id: appt.id,
+          start_time: appt.start_time,
+          status: appt.status,
+          service: appt.services || [], // Convert services array to service property
+        })) || [];
+
+        setUpcoming(transformUpcoming);
+        setPast(transformPast);
       } catch (error) {
         console.error('Error fetching appointments:', error);
       } finally {

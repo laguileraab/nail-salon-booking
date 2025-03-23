@@ -117,7 +117,7 @@ const Dashboard = () => {
 
         // Generate monthly revenue data (dummy data for now)
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const monthlyRevenue = months.map((month, index) => ({
+        const monthlyRevenue = months.map((month) => ({
           month,
           revenue: Math.floor(Math.random() * 5000) + 1000, // Dummy data
         }));

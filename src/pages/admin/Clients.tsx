@@ -83,10 +83,15 @@ const Clients = () => {
   const sortedClients = () => {
     const sorted = [...clients];
     sorted.sort((a, b) => {
-      if (a[sortConfig.key as keyof Client] < b[sortConfig.key as keyof Client]) {
+      const aValue = a[sortConfig.key as keyof Client];
+      const bValue = b[sortConfig.key as keyof Client];
+      
+      if (aValue === undefined || bValue === undefined) return 0;
+      
+      if (aValue < bValue) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
       }
-      if (a[sortConfig.key as keyof Client] > b[sortConfig.key as keyof Client]) {
+      if (aValue > bValue) {
         return sortConfig.direction === 'ascending' ? 1 : -1;
       }
       return 0;
@@ -230,37 +235,13 @@ const Clients = () => {
                       {filteredClients.length > 0 ? (
                         filteredClients.map((client) => (
                           <tr key={client.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">{client.first_name || '-'} {client.last_name || '-'}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{client.email || '-'}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{client.phone || '-'}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10 bg-accent-100 rounded-full flex items-center justify-center">
-                                  <FiUser className="h-5 w-5 text-accent-600" />
-                                </div>
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {client.first_name} {client.last_name}
-                                  </div>
-                                </div>
-                              </div>
+                              {client.appointment_count !== undefined ? client.appointment_count : 0}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center text-sm text-gray-500">
-                                <FiMail className="mr-2 h-4 w-4 text-gray-400" />
-                                {client.email}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center text-sm text-gray-500">
-                                <FiPhone className="mr-2 h-4 w-4 text-gray-400" />
-                                {client.phone || 'Not provided'}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <div className="flex items-center">
-                                <FiCalendar className="mr-2 h-4 w-4 text-gray-400" />
-                                {client.appointment_count} appointments
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {formatDate(client.created_at)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

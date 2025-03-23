@@ -223,7 +223,7 @@ const Bookings = () => {
       const appointmentDateTime = new Date(`${selectedDate}T${selectedTimeSlot}:00`);
 
       // Create the appointment
-      const { data, error } = await supabase.from('appointments').insert([
+      const { error } = await supabase.from('appointments').insert([
         {
           user_id: profile.id,
           service_id: selectedService.id,

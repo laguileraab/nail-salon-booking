@@ -83,7 +83,10 @@ const Feedback = () => {
 
         // Mark appointments with feedback
         const processedAppointments = appointmentsData?.map((appointment) => ({
-          ...appointment,
+          id: appointment.id,
+          start_time: appointment.start_time,
+          service: appointment.services || [], // Transform to match Appointment type
+          status: appointment.status || 'completed',
           has_feedback: appointmentsWithFeedback.has(appointment.id),
         })) || [];
 

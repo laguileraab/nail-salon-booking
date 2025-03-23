@@ -82,13 +82,21 @@ const Feedback = () => {
         );
 
         // Mark appointments with feedback
-        const processedAppointments = appointmentsData?.map((appointment) => ({
-          id: appointment.id,
-          start_time: appointment.start_time,
-          service: appointment.services || [], // Transform to match Appointment type
-          status: appointment.status || 'completed',
-          has_feedback: appointmentsWithFeedback.has(appointment.id),
-        })) || [];
+        const processedAppointments = appointmentsData?.map((appointment) => {
+          // Get the first service if it exists
+          const serviceData = Array.isArray(appointment.services) && appointment.services.length > 0 
+            ? appointment.services[0] 
+            : null;
+            
+          return {
+            id: appointment.id,
+            start_time: appointment.start_time,
+            service: {
+              name: serviceData?.name || 'Unknown Service'
+            },
+            has_feedback: appointmentsWithFeedback.has(appointment.id)
+          };
+        }) || [];
 
         setAppointments(processedAppointments);
 

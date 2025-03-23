@@ -15,6 +15,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -119,6 +120,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  // Update user profile
+  const updateProfile = async (updates: Partial<Profile>) => {
+    try {
+      if (!user) throw new Error('User not authenticated');
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      // Update the local profile state with the new data
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error updating profile:', error.message);
+      return { error };
+    }
+  };
+
   const value = {
     session,
     user,
@@ -129,9 +152,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signOut,
     resetPassword,
+    updateProfile
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

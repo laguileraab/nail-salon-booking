@@ -48,19 +48,37 @@ const Dashboard = () => {
         if (pastError) throw pastError;
 
         // Transform the data to match the Appointment type
-        const transformUpcoming = upcomingData?.map(appt => ({
-          id: appt.id,
-          start_time: appt.start_time,
-          status: appt.status,
-          service: appt.services || [], // Convert services array to service property
-        })) || [];
+        const transformUpcoming = upcomingData?.map(appt => {
+          // Get the first service if it exists, or create a default one
+          const serviceData = Array.isArray(appt.services) && appt.services.length > 0 ? appt.services[0] : null;
+          
+          return {
+            id: appt.id,
+            start_time: appt.start_time,
+            status: appt.status,
+            service: {
+              name: serviceData?.name || 'Unknown Service',
+              price: serviceData?.price || 0,
+              duration: serviceData?.duration || 0
+            }
+          };
+        }) || [];
 
-        const transformPast = pastData?.map(appt => ({
-          id: appt.id,
-          start_time: appt.start_time,
-          status: appt.status,
-          service: appt.services || [], // Convert services array to service property
-        })) || [];
+        const transformPast = pastData?.map(appt => {
+          // Get the first service if it exists, or create a default one
+          const serviceData = Array.isArray(appt.services) && appt.services.length > 0 ? appt.services[0] : null;
+          
+          return {
+            id: appt.id,
+            start_time: appt.start_time,
+            status: appt.status,
+            service: {
+              name: serviceData?.name || 'Unknown Service',
+              price: serviceData?.price || 0,
+              duration: serviceData?.duration || 0
+            }
+          };
+        }) || [];
 
         setUpcoming(transformUpcoming);
         setPast(transformPast);

@@ -1,54 +1,137 @@
+/**
+ * Services for managing bookings with Supabase
+ */
 import { supabase } from '../lib/supabase';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { createClient, PostgrestSingleResponse, PostgrestResponse } from '@supabase/supabase-js';
 
-export type BookingFormData = {
-  serviceId: string;
-  staffId?: string | null;
-  appointmentDate: string;
-  appointmentTime: string;
-  notes?: string;
-  // For guest bookings
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  // For user bookings
-  userId?: string;
+// Create a properly typed Supabase client
+const typedClient = supabase as unknown as ReturnType<typeof createClient>;
+
+// Type for working hours configuration
+interface WorkingHoursConfig {
+  [day: string]: {
+    open: boolean;
+    start: string;
+    end: string;
+  };
+}
+
+// Type for business settings
+interface BusinessSettings {
+  working_hours: WorkingHoursConfig;
+  appointment_buffer: number;
+}
+
+// Create a simple confirmation code generator
+function generateConfirmationCode(): string {
+  const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Omit similar-looking characters
+  let code = '';
+  
+  for (let i = 0; i < 8; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    code += characters.charAt(randomIndex);
+  }
+  
+  return code;
+}
+
+// Email service mock - replace with actual implementation or import
+const emailService = {
+  sendBookingCancellation: async (data: { 
+    to: string; 
+    name: string; 
+    date: string; 
+    time: string;
+  }): Promise<void> => {
+    console.log('Sending cancellation email to:', data.to);
+    // Email sending logic would go here
+  }
 };
 
-export type GuestBooking = {
+/**
+ * Types for booking data
+ */
+export interface Service {
+  id: string;
+  name: string;
+  price: number;
+  duration: number;
+  description: string;
+  category: string;
+}
+
+export interface Staff {
+  id: string;
   first_name: string;
   last_name: string;
   email: string;
   phone: string;
-  service_id: string;
-  staff_id?: string;
-  appointment_date: string;
-  appointment_time: string;
-  duration_minutes: number;
-  status: string;
-  notes: string | null;
-  confirmation_code: string;
-};
+  bio: string;
+}
 
-export type Appointment = {
-  client_id: string;
+export interface GuestBooking {
+  id?: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  appointment_date: string; // ISO date format
+  appointment_time: string; // HH:MM format
+  confirmation_code: string;
+  service_id: string;
+  staff_id: string;
+  status: 'confirmed' | 'cancelled' | 'completed';
+  notes: string | null;
+}
+
+export interface UserProfile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  avatar_url: string | null;
+}
+
+export interface BookingFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  date: string;
+  time: string;
+  serviceId: string;
+  staffId: string;
+  notes?: string;
+}
+
+// Type for staff with related service
+interface StaffWithService {
+  staff_id: string;
+  staff: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
+}
+
+// Type for appointment data
+interface AppointmentData {
+  user_id: string;
   service_id: string;
   staff_id: string;
   start_time: string;
   end_time: string;
   status: string;
   notes: string | null;
-};
+}
 
-export type UserProfile = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  created_at: string;
-};
+// Type for appointment with time
+interface Appointment {
+  start_time: string;
+  end_time: string;
+}
 
 /**
  * Service for handling all booking-related operations with Supabase
@@ -60,11 +143,11 @@ export const bookingService = {
   async createGuestBooking(bookingData: BookingFormData): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
       // Get the selected service details to calculate duration
-      const { data: serviceData, error: serviceError } = await supabase
+      const { data: serviceData, error: serviceError } = await typedClient
         .from('services')
         .select('duration')
         .eq('id', bookingData.serviceId)
-        .single();
+        .single() as PostgrestSingleResponse<{ duration: number }>;
 
       if (serviceError || !serviceData) {
         console.error('Error fetching service:', serviceError);
@@ -72,8 +155,8 @@ export const bookingService = {
       }
 
       // Parse the time string and create a Date object for appointment
-      const [hours, minutes] = bookingData.appointmentTime.split(':').map(Number);
-      const appointmentDate = new Date(bookingData.appointmentDate);
+      const [hours, minutes] = bookingData.time.split(':').map(Number);
+      const appointmentDate = new Date(bookingData.date);
       appointmentDate.setHours(hours, minutes, 0, 0);
 
       // Generate a unique confirmation code
@@ -81,33 +164,38 @@ export const bookingService = {
       
       // Format data for insertion
       const guestBookingData: GuestBooking = {
-        first_name: bookingData.firstName || '',
-        last_name: bookingData.lastName || '',
-        email: bookingData.email || '',
-        phone: bookingData.phone || '',
-        service_id: bookingData.serviceId,
-        staff_id: bookingData.staffId || undefined,
+        first_name: bookingData.firstName,
+        last_name: bookingData.lastName,
+        email: bookingData.email,
+        phone: bookingData.phone,
         appointment_date: format(appointmentDate, 'yyyy-MM-dd'),
-        appointment_time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`,
-        duration_minutes: serviceData.duration,
-        status: 'pending',
+        appointment_time: bookingData.time,
+        confirmation_code: confirmationCode,
+        service_id: bookingData.serviceId,
+        staff_id: bookingData.staffId,
+        status: 'confirmed',
         notes: bookingData.notes || null,
-        confirmation_code: confirmationCode
       };
 
       // Insert the booking into the guest_bookings table
-      const { data, error } = await supabase
+      // Cast to the expected type structure required by Supabase
+      const { data, error } = await typedClient
         .from('guest_bookings')
-        .insert(guestBookingData)
-        .select('id')
-        .single();
+        .insert([guestBookingData as unknown as Record<string, unknown>]) as PostgrestResponse<{ id: string }>;
 
       if (error) {
         console.error('Error creating guest booking:', error);
         return { success: false, error: error.message };
       }
 
-      return { success: true, id: data.id };
+      // Ensure data is properly typed
+      const typedData = data as unknown as { id: string }[];
+      
+      // Create the appointment
+      const appointmentEndTime = new Date(appointmentDate);
+      appointmentEndTime.setMinutes(appointmentEndTime.getMinutes() + serviceData.duration);
+
+      return { success: true, id: typedData[0]?.id };
     } catch (err: unknown) {
       console.error('Unexpected error in createGuestBooking:', err instanceof Error ? err.message : String(err));
       return { success: false, error: 'An unexpected error occurred' };
@@ -117,56 +205,54 @@ export const bookingService = {
   /**
    * Create a new booking for an authenticated user
    */
-  async createUserBooking(bookingData: BookingFormData): Promise<{ success: boolean; id?: string; error?: string }> {
+  async createUserBooking(bookingData: BookingFormData, userId: string): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
-      if (!bookingData.userId) {
-        return { success: false, error: 'User ID is required for registered user bookings' };
-      }
-
-      // Get the service details to calculate end time
-      const { data: serviceData, error: serviceError } = await supabase
+      // Get the selected service details to calculate duration
+      const { data: serviceData, error: serviceError } = await typedClient
         .from('services')
         .select('duration')
         .eq('id', bookingData.serviceId)
-        .single();
+        .single() as PostgrestSingleResponse<{ duration: number }>;
 
       if (serviceError || !serviceData) {
         console.error('Error fetching service:', serviceError);
         return { success: false, error: 'Failed to fetch service details' };
       }
 
-      // Parse the time string and create Date objects for start and end time
-      const [hours, minutes] = bookingData.appointmentTime.split(':').map(Number);
-      const startTime = new Date(bookingData.appointmentDate);
-      startTime.setHours(hours, minutes, 0, 0);
-
-      const endTime = new Date(startTime.getTime());
+      // Parse the time string and create a Date object for appointment
+      const [hours, minutes] = bookingData.time.split(':').map(Number);
+      const appointmentDate = new Date(bookingData.date);
+      appointmentDate.setHours(hours, minutes, 0, 0);
+      
+      // Calculate end time
+      const endTime = new Date(appointmentDate);
       endTime.setMinutes(endTime.getMinutes() + serviceData.duration);
 
-      // Format data for insertion
-      const appointmentData: Appointment = {
-        client_id: bookingData.userId,
+      // Insert appointment
+      const appointmentData: AppointmentData = {
+        user_id: userId,
         service_id: bookingData.serviceId,
-        staff_id: bookingData.staffId || '', // Handle staff assignment logic
-        start_time: startTime.toISOString(),
+        staff_id: bookingData.staffId,
+        start_time: appointmentDate.toISOString(),
         end_time: endTime.toISOString(),
-        status: 'pending',
-        notes: bookingData.notes || null
+        status: 'confirmed',
+        notes: bookingData.notes || null,
       };
-
-      // Insert the booking into the appointments table
-      const { data, error } = await supabase
+      
+      // Cast to the expected type structure required by Supabase
+      const { data, error } = await typedClient
         .from('appointments')
-        .insert(appointmentData)
-        .select('id')
-        .single();
+        .insert([appointmentData as unknown as Record<string, unknown>]) as PostgrestResponse<{ id: string }>;
 
       if (error) {
-        console.error('Error creating user booking:', error);
+        console.error('Error creating appointment:', error);
         return { success: false, error: error.message };
       }
 
-      return { success: true, id: data.id };
+      // Ensure data is properly typed
+      const typedData = data as unknown as { id: string }[];
+      
+      return { success: true, id: typedData[0]?.id };
     } catch (err: unknown) {
       console.error('Unexpected error in createUserBooking:', err instanceof Error ? err.message : String(err));
       return { success: false, error: 'An unexpected error occurred' };
@@ -183,13 +269,13 @@ export const bookingService = {
   ): Promise<{ hour: number; minute: number; available: boolean; staffId?: string }[]> {
     try {
       // Get business settings for working hours and appointment buffer
-      const { data: settingsData } = await supabase
+      const { data: settingsData, error: settingsError } = await typedClient
         .from('business_settings')
         .select('working_hours, appointment_buffer')
-        .single();
+        .single() as PostgrestSingleResponse<BusinessSettings>;
 
-      if (!settingsData) {
-        console.error('Business settings not found');
+      if (settingsError || !settingsData) {
+        console.error('Error fetching business settings:', settingsError);
         return [];
       }
 
@@ -201,134 +287,139 @@ export const bookingService = {
       const dayHours = workingHours[dayOfWeek] || { open: false, start: '', end: '' };
       
       if (!dayHours.open) {
-        // Business is closed on this day
+        console.info('Business is closed on this day');
         return [];
       }
       
-      // Convert working hours to time slots
-      const timeSlots: { hour: number; minute: number; available: boolean; staffId?: string }[] = [];
-      
-      // Parse start and end hours
+      // Parse start and end times
       const [startHour, startMinute] = dayHours.start.split(':').map(Number);
       const [endHour, endMinute] = dayHours.end.split(':').map(Number);
       
       // Get the selected service details
-      const { data: serviceData } = await supabase
+      const { data: serviceData, error: serviceError } = await typedClient
         .from('services')
         .select('duration')
         .eq('id', serviceId)
-        .single();
-      
-      if (!serviceData) {
-        console.error('Service not found');
+        .single() as PostgrestSingleResponse<{ duration: number }>;
+
+      if (serviceError || !serviceData) {
+        console.error('Error fetching service:', serviceError);
         return [];
       }
       
-      const serviceDuration = serviceData.duration || 60; // Default to 60 minutes if not specified
-      const appointmentBuffer = settingsData.appointment_buffer || 0;
-      const totalDuration = serviceDuration + appointmentBuffer;
+      const serviceDuration = serviceData.duration;
       
-      // Generate time slots at 15-minute intervals within working hours
-      let currentHour = startHour;
-      let currentMinute = startMinute;
+      // Generate time slots based on the working hours
+      const availableTimeSlots: { hour: number; minute: number; available: boolean; staffId?: string }[] = [];
       
-      while (
-        currentHour < endHour ||
-        (currentHour === endHour && currentMinute <= endMinute - totalDuration)
-      ) {
-        // Create a time slot
-        timeSlots.push({
-          hour: currentHour,
-          minute: currentMinute,
-          available: true, // Default to available, will be updated below
-          staffId: staffId
-        });
+      // Start from the opening time
+      let hour = startHour;
+      let minute = startMinute;
+      
+      while (hour < endHour || (hour === endHour && minute <= endMinute - serviceDuration)) {
+        // Create a slot
+        const slot = {
+          hour,
+          minute,
+          available: true, // Initially mark all slots as available
+          staffId: undefined
+        };
         
-        // Move to the next slot (15 min intervals)
-        currentMinute += 15;
-        if (currentMinute >= 60) {
-          currentHour += 1;
-          currentMinute = 0;
+        availableTimeSlots.push(slot);
+        
+        // Move to the next time slot (typically 15, 30, or 60 minutes depending on the business)
+        minute += 30; // Example: 30-minute increments
+        if (minute >= 60) {
+          hour += Math.floor(minute / 60);
+          minute %= 60;
         }
       }
       
-      // If a staff ID is provided, check their availability
+      // If staff ID is provided, check that specific staff member's availability
       if (staffId) {
-        // Check existing appointments for this staff on this date
+        // Get all appointments for this staff on the selected date
         const startOfDay = new Date(date);
         startOfDay.setHours(0, 0, 0, 0);
         
         const endOfDay = new Date(date);
         endOfDay.setHours(23, 59, 59, 999);
         
-        const { data: appointments } = await supabase
+        const { data: appointments, error: appointmentsError } = await typedClient
           .from('appointments')
           .select('start_time, end_time')
           .eq('staff_id', staffId)
           .gte('start_time', startOfDay.toISOString())
           .lte('start_time', endOfDay.toISOString())
-          .in('status', ['pending', 'confirmed']);
-        
-        if (appointments && appointments.length > 0) {
-          // Mark slots as unavailable if they overlap with existing appointments
-          for (const appointment of appointments) {
-            const appointmentStart = new Date(appointment.start_time);
-            const appointmentEnd = new Date(appointment.end_time);
+          .in('status', ['pending', 'confirmed'])
+          .order('start_time') as PostgrestResponse<Appointment>;
+
+        if (appointmentsError || !appointments) {
+          console.error('Error fetching appointments:', appointmentsError);
+          return availableTimeSlots;
+        }
+
+        // Mark slots as unavailable if they overlap with existing appointments
+        for (const appointment of appointments) {
+          const startTime = parseISO(appointment.start_time);
+          const endTime = parseISO(appointment.end_time);
             
-            timeSlots.forEach((slot, index) => {
-              const slotStart = new Date(date);
-              slotStart.setHours(slot.hour, slot.minute, 0, 0);
+          // Check each slot against this appointment
+          for (const slot of availableTimeSlots) {
+            const slotStartTime = new Date(date);
+            slotStartTime.setHours(slot.hour, slot.minute, 0, 0);
               
-              const slotEnd = new Date(slotStart);
-              slotEnd.setMinutes(slotEnd.getMinutes() + totalDuration);
+            const slotEndTime = new Date(slotStartTime.getTime());
+            slotEndTime.setMinutes(slotEndTime.getMinutes() + serviceDuration);
               
-              // Check if this slot overlaps with the appointment
-              if (
-                (slotStart >= appointmentStart && slotStart < appointmentEnd) ||
-                (slotEnd > appointmentStart && slotEnd <= appointmentEnd) ||
-                (slotStart <= appointmentStart && slotEnd >= appointmentEnd)
-              ) {
-                timeSlots[index].available = false;
-              }
-            });
+            // If slot overlaps with appointment, mark as unavailable
+            if (
+              (slotStartTime >= startTime && slotStartTime < endTime) ||
+              (slotEndTime > startTime && slotEndTime <= endTime) ||
+              (slotStartTime <= startTime && slotEndTime >= endTime)
+            ) {
+              slot.available = false;
+            }
+          }
+        }
+        
+        // Assign staff to available slots
+        for (const slot of availableTimeSlots) {
+          if (slot.available) {
+            slot.staffId = staffId;
           }
         }
       }
       
-      return timeSlots;
+      return availableTimeSlots;
     } catch (err: unknown) {
       console.error('Error getting available time slots:', err instanceof Error ? err.message : String(err));
       return [];
     }
   },
-
+  
   /**
    * Get all available staff members for a specific service
    */
   async getAvailableStaffForService(serviceId: string): Promise<{ id: string; name: string }[]> {
     try {
       // Get all staff members qualified for this service
-      const { data, error } = await supabase
+      const { data, error } = await typedClient
         .from('staff_services')
         .select('staff_id, staff:staff_id(id, first_name, last_name)')
-        .eq('service_id', serviceId);
+        .eq('service_id', serviceId) as PostgrestResponse<StaffWithService>;
 
       if (error || !data) {
         console.error('Error fetching available staff:', error);
         return [];
       }
 
-      // Format the response using a type assertion to handle the Supabase join result structure
-      return data.map(item => {
-        // Cast the staff object to the expected structure
-        const staff = item.staff as unknown as { id: string; first_name: string; last_name: string };
-        return {
-          id: staff.id,
-          name: `${staff.first_name} ${staff.last_name}`
-        };
-      });
+      // Transform data to expected format
+      return data.map(item => ({
+        id: item.staff_id as string,
+        name: `${item.staff.first_name} ${item.staff.last_name}`
+      }));
     } catch (err: unknown) {
-      console.error('Error in getAvailableStaffForService:', err instanceof Error ? err.message : String(err));
+      console.error('Error getting available staff:', err instanceof Error ? err.message : String(err));
       return [];
     }
   },
@@ -338,57 +429,57 @@ export const bookingService = {
    */
   async getServices(): Promise<{ id: string; name: string; price: number; duration: number; description: string; category: string }[]> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await typedClient
         .from('services')
         .select('id, name, price, duration, description, category')
         .eq('is_active', true)
-        .order('category');
+        .order('category') as PostgrestResponse<Service>;
 
       if (error) {
         console.error('Error fetching services:', error);
         return [];
       }
 
-      return data;
+      return data || [];
     } catch (err: unknown) {
-      console.error('Error in getServices:', err instanceof Error ? err.message : String(err));
+      console.error('Error getting services:', err instanceof Error ? err.message : String(err));
       return [];
     }
   },
-
+  
   /**
-   * Get a specific service by ID
+   * Get service details by ID
    */
-  async getServiceById(serviceId: string): Promise<{ id: string; name: string; price: number; duration: number; description: string; category: string } | null> {
+  async getServiceById(serviceId: string): Promise<Service | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await typedClient
         .from('services')
         .select('id, name, price, duration, description, category')
         .eq('id', serviceId)
-        .single();
+        .single() as PostgrestSingleResponse<Service>;
 
       if (error) {
-        console.error('Error fetching service by ID:', error);
+        console.error('Error fetching service:', error);
         return null;
       }
 
       return data;
     } catch (err: unknown) {
-      console.error('Error in getServiceById:', err instanceof Error ? err.message : String(err));
+      console.error('Error getting service by ID:', err instanceof Error ? err.message : String(err));
       return null;
     }
   },
-
+  
   /**
    * Get user profile data
    */
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await typedClient
         .from('profiles')
-        .select('*')
+        .select('id, first_name, last_name, email, phone, avatar_url')
         .eq('id', userId)
-        .single();
+        .single() as PostgrestSingleResponse<UserProfile>;
 
       if (error) {
         console.error('Error fetching user profile:', error);
@@ -397,75 +488,123 @@ export const bookingService = {
 
       return data;
     } catch (err: unknown) {
-      console.error('Error in getUserProfile:', err instanceof Error ? err.message : String(err));
+      console.error('Error getting user profile:', err instanceof Error ? err.message : String(err));
       return null;
     }
   },
-
+  
   /**
-   * Cancel a booking
+   * Get booking details by confirmation code
    */
-  async cancelBooking(bookingId: string, isGuest: boolean): Promise<{ success: boolean; error?: string }> {
+  async getBookingByConfirmationCode(confirmationCode: string): Promise<{ 
+    data: { 
+      id: string; 
+      firstName: string; 
+      lastName: string; 
+      email: string; 
+      phone: string; 
+      appointmentDate: string; 
+      appointmentTime: string; 
+      serviceName: string; 
+      staffName: string; 
+      status: string; 
+      confirmationCode: string; 
+    } | null; 
+    error: Error | null 
+  }> {
     try {
-      let error;
+      // Get the booking and related service and staff
+      const { data, error } = await typedClient
+        .from('guest_bookings')
+        .select('*, service:service_id(*), staff:staff_id(*)')
+        .eq('confirmation_code', confirmationCode)
+        .single() as PostgrestSingleResponse<{
+          id: string;
+          first_name: string;
+          last_name: string;
+          email: string;
+          phone: string;
+          appointment_date: string;
+          appointment_time: string;
+          confirmation_code: string;
+          status: string;
+          service: { name: string };
+          staff: { first_name: string; last_name: string };
+        }>;
 
-      if (isGuest) {
-        // Cancel a guest booking
-        const { error: cancelError } = await supabase
-          .from('guest_bookings')
-          .update({ status: 'cancelled' })
-          .eq('id', bookingId);
-
-        error = cancelError;
-      } else {
-        // Cancel a user booking
-        const { error: cancelError } = await supabase
-          .from('appointments')
-          .update({ status: 'cancelled' })
-          .eq('id', bookingId);
-
-        error = cancelError;
+      if (error) {
+        console.error('Error fetching booking:', error);
+        return { data: null, error };
       }
+
+      if (!data) {
+        return { data: null, error: new Error('Booking not found') };
+      }
+      
+      // Format data for response
+      return {
+        data: {
+          id: data.id,
+          firstName: data.first_name,
+          lastName: data.last_name,
+          email: data.email,
+          phone: data.phone,
+          appointmentDate: data.appointment_date,
+          appointmentTime: data.appointment_time,
+          serviceName: data.service.name,
+          staffName: `${data.staff.first_name} ${data.staff.last_name}`,
+          status: data.status,
+          confirmationCode: data.confirmation_code
+        },
+        error: null
+      };
+    } catch (err: unknown) {
+      console.error('Error getting booking by confirmation code:', err instanceof Error ? err.message : String(err));
+      return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
+    }
+  },
+  
+  /**
+   * Cancel a booking by confirmation code
+   */
+  async cancelBooking(confirmationCode: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Get the booking to verify it exists
+      const bookingResult = await this.getBookingByConfirmationCode(confirmationCode);
+      
+      if (bookingResult.error || !bookingResult.data) {
+        console.error('Error finding booking to cancel:', bookingResult.error);
+        return { success: false, error: 'Booking not found' };
+      }
+      
+      // Update the status to 'cancelled'
+      const { error } = await typedClient
+        .from('guest_bookings')
+        .update({ status: 'cancelled' })
+        .eq('confirmation_code', confirmationCode);
 
       if (error) {
         console.error('Error cancelling booking:', error);
         return { success: false, error: error.message };
       }
-
+      
+      // Send cancellation email
+      try {
+        await emailService.sendBookingCancellation({
+          to: bookingResult.data.email,
+          name: `${bookingResult.data.firstName} ${bookingResult.data.lastName}`,
+          date: bookingResult.data.appointmentDate,
+          time: bookingResult.data.appointmentTime
+        });
+      } catch (emailErr) {
+        console.error('Error sending cancellation email:', emailErr);
+        // Don't fail the operation if email fails
+      }
+      
       return { success: true };
     } catch (err: unknown) {
-      console.error('Unexpected error in cancelBooking:', err instanceof Error ? err.message : String(err));
+      console.error('Error cancelling booking:', err instanceof Error ? err.message : String(err));
       return { success: false, error: 'An unexpected error occurred' };
-    }
-  },
-
-  /**
-   * Get booking details by confirmation code (for guest bookings)
-   */
-  async getBookingByConfirmationCode(code: string): Promise<GuestBooking | null> {
-    try {
-      const { data, error } = await supabase
-        .from('guest_bookings')
-        .select('*')
-        .eq('confirmation_code', code)
-        .single();
-
-      if (error) {
-        console.error('Error fetching booking by confirmation code:', error);
-        return null;
-      }
-
-      return data;
-    } catch (err: unknown) {
-      console.error('Error in getBookingByConfirmationCode:', err instanceof Error ? err.message : String(err));
-      return null;
     }
   }
 };
-
-/**
- * Generate a random confirmation code for guest bookings
- */
-function generateConfirmationCode(): string {
-  return Math.random().toString(36).substring(2, 10).toUpperCase();
-}

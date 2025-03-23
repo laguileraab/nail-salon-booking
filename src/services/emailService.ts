@@ -31,7 +31,17 @@ export const emailService = {
    */
   async _sendEmail(emailData: EmailData): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase.functions.invoke('send-email', {
+      // Use a proper type for the Supabase client with functions
+      interface SupabaseClientWithFunctions {
+        functions: {
+          invoke: (
+            functionName: string, 
+            options: { body: EmailData }
+          ) => Promise<{ data: unknown; error: Error | null }>
+        }
+      }
+      
+      const { error } = await (supabase as SupabaseClientWithFunctions).functions.invoke('send-email', {
         body: emailData,
       });
 

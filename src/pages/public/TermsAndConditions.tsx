@@ -1,8 +1,10 @@
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import SEO from '../../components/SEO';
 
 const TermsAndConditions = () => {
   const { language } = useLanguage();
+  const { theme } = useTheme();
 
   const getContent = () => {
     switch (language) {
@@ -121,14 +123,16 @@ const TermsAndConditions = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
       <SEO 
-        title={`Terms and Conditions - MärchenNails`}
-        description="Terms and conditions for MärchenNails salon services and website usage."
+        title={language === 'de' ? 'MärchenNails - Allgemeine Geschäftsbedingungen' : 
+              language === 'es' ? 'MärchenNails - Términos y Condiciones' : 
+              'MärchenNails - Terms and Conditions'}
+        description="Terms and conditions for MärchenNails nail salon services"
         ogType="website"
       />
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6 lg:p-8">
+      <div className="container max-w-4xl mx-auto px-4 py-12">
+        <div className={`prose ${theme === 'dark' ? 'prose-invert' : ''} max-w-none`}>
           {getContent()}
         </div>
       </div>

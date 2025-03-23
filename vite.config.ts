@@ -48,50 +48,50 @@ export default defineConfig(({ mode }) => {
       sourcemap: !isProduction,
       // Increase the chunk size warning limit to avoid unnecessary warnings
       chunkSizeWarningLimit: 800,
+      // Fix optimization issues
+      commonjsOptions: {
+        transformMixedEsModules: true,
+        strictRequires: true
+      },
+      // Disable code splitting to prevent initialization order issues
+      target: 'esnext',
       rollupOptions: {
         output: {
-          // Improved manual chunking strategy to reduce bundle sizes
+          // Resolve the import order issue by simplifying the chunking strategy
           manualChunks: (id) => {
-            // Core dependencies
-            if (id.includes('node_modules/react/') || 
-                id.includes('node_modules/react-dom/') || 
-                id.includes('node_modules/react-router-dom/')) {
-              return 'vendor-core';
+            // Core dependencies - React and its ecosystem
+            if (id.includes('node_modules/react') || 
+                id.includes('node_modules/react-dom') || 
+                id.includes('node_modules/react-router')) {
+              return 'vendor-react';
             }
             
-            // UI components
-            if (id.includes('node_modules/react-icons/') || 
-                id.includes('node_modules/react-hot-toast/')) {
-              return 'vendor-ui';
+            // Supabase and auth-related dependencies
+            if (id.includes('node_modules/@supabase')) {
+              return 'vendor-supabase';
             }
             
-            // Auth related dependencies
-            if (id.includes('node_modules/@supabase/') || 
-                id.includes('node_modules/jwt-decode/')) {
-              return 'vendor-auth';
-            }
-            
-            // Date and time libraries
-            if (id.includes('node_modules/date-fns/') || 
-                id.includes('node_modules/dayjs/')) {
-              return 'vendor-datetime';
-            }
-            
-            // Other common third-party libraries
+            // All other third-party libraries together
             if (id.includes('node_modules/')) {
-              return 'vendor-others';
+              return 'vendor-deps';
             }
-          }
+          },
+          // Ensure consistent module evaluation order
+          hoistTransitiveImports: false,
+          // Reduce chunk splitting to prevent initialization problems
+          experimentalMinChunkSize: 10000
         }
       }
     },
     base: "/",  // Ensure proper base path for assets
+    preview: {
+      port: 3001,
+      strictPort: false,
+      open: true
+    },
     server: {
       port: 3000,
       open: true
-    },
-    preview: {
-      port: 3000
     }
   };
 });

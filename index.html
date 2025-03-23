@@ -14,8 +14,8 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://maerchennails.com" />
     <meta property="og:image" content="/og-image.jpg" />
-    <!-- Much more permissive CSP for production to ensure app works properly -->
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';" />
+    <!-- Production CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co https://api.emailjs.com; img-src 'self' data: https://images.unsplash.com https://*.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
@@ -26,10 +26,169 @@
     <!-- Base URL for client-side routing -->
     <base href="/" />
     <title>MärchenNails | Premium Nail Services</title>
+    <!-- Styles for loading and error states -->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Poppins', sans-serif;
+        background-color: #fafafa;
+      }
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        text-align: center;
+        background: linear-gradient(to bottom right, #fce4ec, #f8bbd0);
+        transition: opacity 0.5s ease;
+      }
+      .loading-logo {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 20px;
+        animation: pulse 1.5s infinite;
+        border-radius: 50%;
+        background-color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      }
+      .loading-logo img {
+        width: 80px;
+        height: 80px;
+      }
+      .loading-text {
+        color: #333;
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(248, 187, 208, 0.3);
+        border-radius: 50%;
+        border-top-color: #f06292;
+        animation: spin 1s ease-in-out infinite;
+      }
+      .error-container {
+        display: none;
+        padding: 30px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        max-width: 500px;
+        margin: 0 auto;
+        text-align: left;
+      }
+      .error-title {
+        color: #e91e63;
+        font-size: 24px;
+        font-weight: 600;
+        margin-top: 0;
+        margin-bottom: 16px;
+      }
+      .error-message {
+        color: #555;
+        margin-bottom: 20px;
+        line-height: 1.6;
+      }
+      .error-details {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 4px;
+        font-size: 14px;
+        overflow-x: auto;
+        color: #777;
+      }
+      .retry-button {
+        background-color: #f06292;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        margin-top: 20px;
+        transition: background-color 0.3s;
+      }
+      .retry-button:hover {
+        background-color: #e91e63;
+      }
+      #root:not(:empty) ~ .loading-container {
+        display: none;
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+    <!-- Preload the main script -->
+    <link rel="modulepreload" href="/src/polyfill.ts" />
   </head>
   <body>
+    <!-- React application root -->
     <div id="root"></div>
+    
+    <!-- Loading screen (visible until React mounts) -->
+    <div class="loading-container">
+      <div class="loading-logo">
+        <img src="/favicon.svg" alt="MärchenNails Logo" />
+      </div>
+      <h1 class="loading-text">MärchenNails</h1>
+      <p>Premium Nail Services</p>
+      <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Error container (displayed by error handler) -->
+    <div id="error-display" class="error-container">
+      <h2 class="error-title">Something went wrong</h2>
+      <p class="error-message">We're having trouble loading the application. Please try refreshing the page.</p>
+      <div id="error-details" class="error-details"></div>
+      <button class="retry-button" onclick="window.location.reload()">Refresh Page</button>
+    </div>
+
+    <!-- Main application script -->
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Initialization error handler -->
+    <script>
+      // Handle uncaught errors
+      window.addEventListener('error', function(e) {
+        console.error('Error:', e.message);
+        showErrorDisplay('Application Error', e.message);
+        return false;
+      });
+
+      // Handle unhandled promise rejections
+      window.addEventListener('unhandledrejection', function(e) {
+        console.error('Promise rejection:', e.reason);
+        showErrorDisplay('Application Error', e.reason.toString());
+        return false;
+      });
+      
+      // Helper function to show error display
+      function showErrorDisplay(errorType, errorText) {
+        const errorContainer = document.getElementById('error-display');
+        const errorDetails = document.getElementById('error-details');
+        
+        if (!errorContainer.style.display || errorContainer.style.display === 'none') {
+          errorContainer.style.display = 'block';
+          errorDetails.textContent = `${errorType}: ${errorText}`;
+          document.querySelector('.loading-container').style.opacity = '0.2';
+        }
+      }
+      
+      // Define global variables that might be expected by third-party libraries
+      window.global = window;
+      window.process = { env: { NODE_ENV: 'production' } };
+    </script>
     <noscript>
       <div style="text-align: center; padding: 2rem; font-family: 'Poppins', sans-serif;">
         <h1>JavaScript is required</h1>

@@ -19,6 +19,8 @@ export const translations = {
     'nav.login': 'Login',
     'nav.admin': 'Admin',
     'nav.settings': 'Settings',
+    'nav.legal': 'Legal Notice',
+    'nav.imprint': 'Imprint',
     
     // General UI
     'welcome': 'Welcome to MärchenNails',
@@ -105,6 +107,7 @@ export const translations = {
     'email.feedbackSubject': 'Thank You for Your Feedback',
     'email.useCode': 'Use code',
     'email.promoSubject': 'Special Offer',
+    'rights': 'All rights reserved.',
   },
   de: {
     // App Navigation
@@ -116,6 +119,8 @@ export const translations = {
     'nav.login': 'Anmelden',
     'nav.admin': 'Admin',
     'nav.settings': 'Einstellungen',
+    'nav.legal': 'Rechtliche Hinweise',
+    'nav.imprint': 'Impressum',
     
     // General UI
     'welcome': 'Willkommen bei MärchenNails',
@@ -202,6 +207,7 @@ export const translations = {
     'email.feedbackSubject': 'Danke für Ihr Feedback',
     'email.useCode': 'Verwenden Sie den Code',
     'email.promoSubject': 'Sonderangebot',
+    'rights': 'Alle Rechte vorbehalten.',
   },
   es: {
     // App Navigation
@@ -213,6 +219,8 @@ export const translations = {
     'nav.login': 'Iniciar Sesión',
     'nav.admin': 'Admin',
     'nav.settings': 'Configuración',
+    'nav.legal': 'Aviso legal',
+    'nav.imprint': 'Pie de imprenta',
     
     // General UI
     'welcome': 'Bienvenido a MärchenNails',
@@ -289,15 +297,16 @@ export const translations = {
     'email.promoBook': '¡Reserva tu cita hoy para aprovechar esta oferta especial!',
     'email.validUntil': 'Válido hasta',
     'email.bookNowButton': 'Reservar Ahora',
-    'email.unsubscribe': 'Si deseas darte de baja de los correos promocionales,',
-    'email.clickHere': 'haz clic aquí',
-    'email.privacyPolicy': 'Política de Privacidad',
-    'email.termsOfService': 'Términos de Servicio',
+    'email.unsubscribe': 'Si deseas darte de baja de los correos electrónicos promocionales,',
+    'email.clickHere': 'haga clic aquí',
+    'email.privacyPolicy': 'Política de privacidad',
+    'email.termsOfService': 'Términos de servicio',
     'email.excellentFeedback': '¡Estamos encantados de saber que has tenido una gran experiencia con nosotros!',
     'email.goodFeedback': 'Gracias por tu feedback. Siempre estamos trabajando para mejorar nuestros servicios.',
     'email.improveFeedback': 'Lamentamos que tu experiencia no haya cumplido con tus expectativas. Tu feedback nos ayuda a mejorar.',
     'email.feedbackSubject': 'Gracias por tu Opinión',
     'email.useCode': 'Usa el código',
     'email.promoSubject': 'Oferta Especial',
+    'rights': 'Todos los derechos reservados.',
   },
 };

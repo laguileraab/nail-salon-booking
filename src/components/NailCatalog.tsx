@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -24,7 +24,9 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
   const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
   const { language } = useLanguage();
-
+  const catalogRef = useRef<HTMLDivElement>(null);
+  
+  // Translations
   const translations = {
     en: {
       title: 'Our Nail Designs',
@@ -90,7 +92,7 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
             id: '1',
             name: 'Classic French Manicure',
             description: 'Timeless and elegant french tips that suit any occasion.',
-            imageUrl: 'https://images.unsplash.com/photo-1604654894610-df63bc536371',
+            imageUrl: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&auto=format&fit=crop&q=80',
             price: 35,
             category: 'manicure',
             popular: true
@@ -99,7 +101,7 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
             id: '2',
             name: 'Gel Polish Full Color',
             description: 'Long-lasting gel polish in the color of your choice.',
-            imageUrl: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b',
+            imageUrl: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=400&auto=format&fit=crop&q=80',
             price: 40,
             category: 'gelPolish',
             popular: true
@@ -108,7 +110,7 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
             id: '3',
             name: 'Acrylic Extensions',
             description: 'Full set of acrylic extensions for added length and strength.',
-            imageUrl: 'https://images.unsplash.com/photo-1604902396830-aca29e19b2b3',
+            imageUrl: 'https://images.unsplash.com/photo-1604902396830-aca29e19b2b3?w=400&auto=format&fit=crop&q=80',
             price: 55,
             category: 'acrylicExtensions',
             popular: false
@@ -117,7 +119,7 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
             id: '4',
             name: 'Nail Art Design',
             description: 'Custom nail art designs created by our skilled technicians.',
-            imageUrl: 'https://images.unsplash.com/photo-1607779097040-28d8a56e32b0',
+            imageUrl: 'https://images.unsplash.com/photo-1607779097040-28d8a56e32b0?w=400&auto=format&fit=crop&q=80',
             price: 45,
             category: 'nailArt',
             popular: true
@@ -126,7 +128,7 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
             id: '5',
             name: 'Spa Pedicure',
             description: 'Relaxing pedicure with exfoliation, massage, and polish.',
-            imageUrl: 'https://images.unsplash.com/photo-1582291652525-cde3dbd88162',
+            imageUrl: 'https://images.unsplash.com/photo-1582291652525-cde3dbd88162?w=400&auto=format&fit=crop&q=80',
             price: 50,
             category: 'pedicure',
             popular: true
@@ -135,7 +137,7 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
             id: '6',
             name: 'Marble Nail Art',
             description: 'Elegant marble effect created with specialized techniques.',
-            imageUrl: 'https://images.unsplash.com/photo-1604902396830-aca29e19b2b3',
+            imageUrl: 'https://images.unsplash.com/photo-1604902396830-aca29e19b2b3?w=400&auto=format&fit=crop&q=80',
             price: 60,
             category: 'nailArt',
             popular: false
@@ -156,7 +158,7 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
 
         setDesigns(filteredDesigns);
         setIsLoading(false);
-      }, 800); // Simulate loading delay
+      }, 500); // Reduced loading delay
     } catch (error: unknown) {
       console.error('Error fetching nail designs:', error instanceof Error ? error.message : String(error));
       setIsLoading(false);
@@ -166,6 +168,32 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
   useEffect(() => {
     fetchDesigns();
   }, [fetchDesigns]);
+
+  // Handle scroll performance
+  useEffect(() => {
+    if (!catalogRef.current) return;
+
+    const handleScroll = () => {
+      if (!catalogRef.current) return;
+      
+      // Add will-change property during scroll for better performance
+      catalogRef.current.style.willChange = 'transform';
+      
+      // Remove will-change after scroll stops to save memory
+      const cleanup = () => {
+        if (catalogRef.current) {
+          catalogRef.current.style.willChange = 'auto';
+        }
+      };
+      
+      // Debounce the cleanup
+      const timeoutId = setTimeout(cleanup, 100);
+      return () => clearTimeout(timeoutId);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (isLoading) {
     return (
@@ -184,7 +212,7 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
   }
 
   return (
-    <div className="py-8">
+    <div className="py-8" ref={catalogRef}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className={`text-3xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} sm:text-4xl`}>
@@ -197,45 +225,48 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
             {designs.map((design) => (
               <div 
                 key={design.id} 
-                className={`relative overflow-hidden rounded-lg shadow-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
+                className={`relative overflow-hidden rounded-lg shadow-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} transform transition duration-300 hover:scale-105 will-change-transform`}
               >
-                <div className="h-64 w-full overflow-hidden">
-                  <img
-                    className="h-full w-full object-cover transform transition duration-500 hover:scale-110"
-                    src={design.imageUrl}
+                <div className="aspect-w-3 aspect-h-2 overflow-hidden">
+                  <img 
+                    src={design.imageUrl} 
                     alt={design.name}
+                    loading="lazy" 
+                    className="w-full h-48 object-cover transform transition duration-300 hover:scale-110 will-change-transform"
+                    style={{ 
+                      transform: 'translate3d(0, 0, 0)',
+                      backfaceVisibility: 'hidden' 
+                    }}
                   />
                 </div>
                 <div className="p-6">
-                  <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{design.name}</h3>
-                  <p className={`mt-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>{design.description}</p>
+                  <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{design.name}</h3>
+                  <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>{design.description}</p>
                   <div className="mt-4 flex justify-between items-center">
-                    <span className="text-accent-600 font-medium">
-                      {currentTranslations.price}: ${design.price}
-                    </span>
-                    <Link
-                      to={`/services/${design.id}`}
-                      className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-accent-600 hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-500"
+                    <p className="text-accent-600 font-bold">${design.price}</p>
+                    <Link 
+                      to="/booking" 
+                      className={`text-sm font-medium px-4 py-2 rounded ${theme === 'dark' ? 'bg-accent-500 text-white hover:bg-accent-600' : 'bg-accent-100 text-accent-700 hover:bg-accent-200'}`}
                     >
-                      {language === 'de' ? 'Details' : language === 'es' ? 'Detalles' : 'Details'}
+                      Book Now
                     </Link>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+          
+          {showAllLink && designs.length > 0 && (
+            <div className="mt-12 text-center">
+              <Link 
+                to="/designs" 
+                className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm ${theme === 'dark' ? 'bg-accent-500 text-white hover:bg-accent-600' : 'bg-accent-600 text-white hover:bg-accent-700'}`}
+              >
+                {currentTranslations.viewAll}
+              </Link>
+            </div>
+          )}
         </div>
-
-        {showAllLink && (
-          <div className="mt-12 text-center">
-            <Link
-              to="/services"
-              className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-accent-600 hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-500`}
-            >
-              {currentTranslations.viewAll}
-            </Link>
-          </div>
-        )}
       </div>
     </div>
   );

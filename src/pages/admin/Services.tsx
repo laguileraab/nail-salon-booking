@@ -1,41 +1,51 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { FiPlus, FiEdit, FiTrash2, FiClock, FiDollarSign, FiSearch } from 'react-icons/fi';
+import SEO from '../../components/SEO';
+import { NailService, NailServiceFormData } from '../../types/NailService';
 
-type Service = {
+// Define the database service type to match the Supabase structure
+interface DatabaseService {
   id: string;
   name: string;
-  description: string;
-  duration: number; // in minutes
+  description: string | null;
   price: number;
+  duration: number;
+  category: string;
+  image_url: string | null;
   is_active: boolean;
   created_at: string;
-};
-
-type ServiceFormData = Omit<Service, 'id' | 'created_at'>;
+  updated_at: string;
+}
 
 const Services = () => {
-  const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<NailService[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [currentService, setCurrentService] = useState<Service | null>(null);
-  const [formData, setFormData] = useState<ServiceFormData>({
+  const [currentService, setCurrentService] = useState<NailService | null>(null);
+  const [categories] = useState<string[]>([
+    'Manicure',
+    'Pedicure',
+    'Nail Art',
+    'Gel Polish',
+    'Acrylic',
+    'Other'
+  ]);
+  const [formData, setFormData] = useState<NailServiceFormData>({
     name: '',
     description: '',
-    duration: 30,
+    durationMinutes: 30,
     price: 0,
-    is_active: true,
+    category: 'Manicure',
+    isActive: true,
+    image: '',
   });
 
-  // Fetch services data
-  useEffect(() => {
-    fetchServices();
-  }, []);
-
-  const fetchServices = async () => {
+  // Define fetchServices with useCallback to avoid unnecessary recreations
+  const fetchServices = useCallback(async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -44,14 +54,32 @@ const Services = () => {
         .order('name');
 
       if (error) throw error;
-      setServices(data || []);
-    } catch (error: any) {
-      console.error('Error fetching services:', error.message);
+      
+      // Transform from database format to our NailService format
+      const transformedData: NailService[] = (data || []).map((item: DatabaseService) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || '', // Convert null to empty string to match NailService type
+        durationMinutes: item.duration,
+        price: item.price,
+        isActive: item.is_active,
+        category: item.category || 'Other',
+        image: item.image_url || undefined,
+      }));
+      
+      setServices(transformedData);
+    } catch (error: unknown) {
+      console.error('Error fetching services:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to load services');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch services data
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -61,7 +89,8 @@ const Services = () => {
     const searchLower = searchTerm.toLowerCase();
     return (
       service.name.toLowerCase().includes(searchLower) ||
-      service.description.toLowerCase().includes(searchLower)
+      service.description.toLowerCase().includes(searchLower) ||
+      service.category.toLowerCase().includes(searchLower)
     );
   });
 
@@ -71,27 +100,31 @@ const Services = () => {
     setFormData({
       name: '',
       description: '',
-      duration: 30,
+      durationMinutes: 30,
       price: 0,
-      is_active: true,
+      category: 'Manicure',
+      isActive: true,
+      image: '',
     });
     setIsModalOpen(true);
   };
 
-  const openEditModal = (service: Service) => {
+  const openEditModal = (service: NailService) => {
     setIsEditMode(true);
     setCurrentService(service);
     setFormData({
       name: service.name,
       description: service.description,
-      duration: service.duration,
+      durationMinutes: service.durationMinutes,
       price: service.price,
-      is_active: service.is_active,
+      category: service.category,
+      isActive: service.isActive,
+      image: service.image,
     });
     setIsModalOpen(true);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
@@ -138,8 +171,8 @@ const Services = () => {
       }
       
       setIsModalOpen(false);
-    } catch (error: any) {
-      console.error(`Error ${isEditMode ? 'updating' : 'adding'} service:`, error.message);
+    } catch (error: unknown) {
+      console.error(`Error ${isEditMode ? 'updating' : 'adding'} service:`, error instanceof Error ? error.message : String(error));
       toast.error(`Failed to ${isEditMode ? 'update' : 'add'} service`);
     }
   };
@@ -158,8 +191,8 @@ const Services = () => {
       
       // Update local state
       setServices(services.filter(service => service.id !== serviceId));
-    } catch (error: any) {
-      console.error('Error deleting service:', error.message);
+    } catch (error: unknown) {
+      console.error('Error deleting service:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to delete service');
     }
   };
@@ -174,6 +207,11 @@ const Services = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
+      <SEO 
+        title="Services Management - MärchenNails"
+        description="Manage salon services, pricing, and descriptions for MärchenNails"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Services Management</h1>
         <div className="mt-3 sm:mt-0 sm:ml-4 flex space-x-3">
@@ -216,7 +254,7 @@ const Services = () => {
                         <div>
                           <div className="flex">
                             <h3 className="text-lg font-medium text-accent-600 truncate">{service.name}</h3>
-                            {!service.is_active && (
+                            {!service.isActive && (
                               <span className="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                                 Inactive
                               </span>
@@ -226,7 +264,7 @@ const Services = () => {
                           <div className="mt-2 flex">
                             <div className="flex items-center text-sm text-gray-500 mr-6">
                               <FiClock className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                              {service.duration} minutes
+                              {service.durationMinutes} minutes
                             </div>
                             <div className="flex items-center text-sm font-medium text-accent-600">
                               <FiDollarSign className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
@@ -312,18 +350,18 @@ const Services = () => {
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
-                        <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="durationMinutes" className="block text-sm font-medium text-gray-700">
                           Duration (minutes)
                         </label>
                         <input
                           type="number"
-                          name="duration"
-                          id="duration"
+                          name="durationMinutes"
+                          id="durationMinutes"
                           min="5"
                           step="5"
                           required
                           className="mt-1 focus:ring-accent-500 focus:border-accent-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                          value={formData.duration}
+                          value={formData.durationMinutes}
                           onChange={handleInputChange}
                         />
                       </div>
@@ -344,16 +382,34 @@ const Services = () => {
                         />
                       </div>
                     </div>
+                    <div>
+                      <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                        Category
+                      </label>
+                      <select
+                        id="category"
+                        name="category"
+                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-accent-500 focus:border-accent-500 sm:text-sm rounded-md"
+                        value={formData.category}
+                        onChange={handleInputChange}
+                      >
+                        {categories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="flex items-center">
                       <input
-                        id="is_active"
-                        name="is_active"
+                        id="isActive"
+                        name="isActive"
                         type="checkbox"
                         className="h-4 w-4 text-accent-600 focus:ring-accent-500 border-gray-300 rounded"
-                        checked={formData.is_active}
+                        checked={formData.isActive}
                         onChange={handleInputChange}
                       />
-                      <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+                      <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
                         Active (available for booking)
                       </label>
                     </div>

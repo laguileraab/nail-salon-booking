@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { FiCalendar, FiClock, FiCheck, FiX } from 'react-icons/fi';
+import SEO from '../../components/SEO';
 
 type Appointment = {
   id: string;
@@ -82,8 +83,8 @@ const Dashboard = () => {
 
         setUpcoming(transformUpcoming);
         setPast(transformPast);
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
+      } catch (error: unknown) {
+        console.error('Error fetching appointments:', error instanceof Error ? error.message : String(error));
       } finally {
         setIsLoading(false);
       }
@@ -132,6 +133,11 @@ const Dashboard = () => {
 
   return (
     <div>
+      <SEO 
+        title="My Dashboard - Mu00e4rchenNails"
+        description="View your upcoming appointments, booking history, and special promotions at Mu00e4rchenNails."
+        canonicalUrl="/dashboard"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">
           Welcome back, {profile?.first_name || 'Client'}

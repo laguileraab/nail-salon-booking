@@ -1,40 +1,52 @@
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import AdminLayout from './layouts/AdminLayout';
 
+// Loading component for suspense fallback
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+  </div>
+);
+
+// Lazy loaded components
 // Public pages
-import LandingPage from './pages/public/LandingPage';
-import LoginPage from './pages/public/LoginPage';
-import RegisterPage from './pages/public/RegisterPage';
-import NotFoundPage from './pages/public/NotFoundPage';
+const LandingPage = lazy(() => import('./pages/public/LandingPage'));
+const LoginPage = lazy(() => import('./pages/public/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/public/RegisterPage'));
+const NotFoundPage = lazy(() => import('./pages/public/NotFoundPage'));
+const Booking = lazy(() => import('./pages/client/Booking'));
+const BookingSuccess = lazy(() => import('./pages/client/BookingSuccess'));
 
 // Client pages
-import ClientDashboard from './pages/client/Dashboard';
-import ClientBookings from './pages/client/Bookings';
-import ClientFeedback from './pages/client/Feedback';
-import ClientSettings from './pages/client/Settings';
+const ClientDashboard = lazy(() => import('./pages/client/Dashboard'));
+const ClientBookings = lazy(() => import('./pages/client/Bookings'));
+const ClientFeedback = lazy(() => import('./pages/client/Feedback'));
+const ClientSettings = lazy(() => import('./pages/client/Settings'));
 
 // Admin pages
-import AdminDashboard from './pages/admin/Dashboard';
-import AdminCalendar from './pages/admin/Calendar';
-import AdminClients from './pages/admin/Clients';
-import AdminFeedbacks from './pages/admin/Feedbacks';
-import AdminServices from './pages/admin/Services';
-import AdminReports from './pages/admin/Reports';
-import AdminStaff from './pages/admin/Staff';
-import AdminPromotions from './pages/admin/Promotions';
-import AdminSettings from './pages/admin/Settings';
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AdminCalendar = lazy(() => import('./pages/admin/Calendar'));
+const AdminClients = lazy(() => import('./pages/admin/Clients'));
+const AdminFeedbacks = lazy(() => import('./pages/admin/Feedbacks'));
+const AdminServices = lazy(() => import('./pages/admin/Services'));
+const AdminReports = lazy(() => import('./pages/admin/Reports'));
+const AdminStaff = lazy(() => import('./pages/admin/Staff'));
+const AdminPromotions = lazy(() => import('./pages/admin/Promotions'));
+const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 
 // Protected route component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactElement, requireAdmin?: boolean }) => {
   const { user, isLoading, isAdmin } = useAuth();
   
-  if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  if (isLoading) return <LoadingFallback />;
   
   if (!user) return <Navigate to="/login" replace />;
   if (requireAdmin && !isAdmin) return <Navigate to="/client/dashboard" replace />;
@@ -47,44 +59,49 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Toaster position="top-right" />
-        <Routes>
-          {/* Public routes */}
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-          
-          {/* Client routes */}
-          <Route path="/client" element={
-            <ProtectedRoute>
-              <DashboardLayout userType="client" />
-            </ProtectedRoute>
-          }>
-            <Route path="dashboard" element={<ClientDashboard />} />
-            <Route path="bookings" element={<ClientBookings />} />
-            <Route path="feedback" element={<ClientFeedback />} />
-            <Route path="settings" element={<ClientSettings />} />
-          </Route>
-          
-          {/* Admin routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute requireAdmin>
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AdminDashboard />} />
-            <Route path="calendar" element={<AdminCalendar />} />
-            <Route path="clients" element={<AdminClients />} />
-            <Route path="feedbacks" element={<AdminFeedbacks />} />
-            <Route path="services" element={<AdminServices />} />
-            <Route path="staff" element={<AdminStaff />} />
-            <Route path="promotions" element={<AdminPromotions />} />
-            <Route path="reports" element={<AdminReports />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route>
-        </Routes>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            {/* Public routes */}
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/booking" element={<Booking />} />
+              <Route path="/booking/:serviceId" element={<Booking />} />
+              <Route path="/booking/success" element={<BookingSuccess />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+            
+            {/* Client routes */}
+            <Route path="/client" element={
+              <ProtectedRoute>
+                <DashboardLayout userType="client" />
+              </ProtectedRoute>
+            }>
+              <Route path="dashboard" element={<ClientDashboard />} />
+              <Route path="bookings" element={<ClientBookings />} />
+              <Route path="feedback" element={<ClientFeedback />} />
+              <Route path="settings" element={<ClientSettings />} />
+            </Route>
+            
+            {/* Admin routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute requireAdmin>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+              <Route path="calendar" element={<AdminCalendar />} />
+              <Route path="clients" element={<AdminClients />} />
+              <Route path="feedbacks" element={<AdminFeedbacks />} />
+              <Route path="services" element={<AdminServices />} />
+              <Route path="staff" element={<AdminStaff />} />
+              <Route path="promotions" element={<AdminPromotions />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

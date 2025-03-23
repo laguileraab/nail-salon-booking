@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { FiEdit2, FiTrash2, FiPlus, FiX, FiSearch } from 'react-icons/fi';
+import SEO from '../../components/SEO';
 
 interface StaffMember {
   id: number;
@@ -38,11 +39,8 @@ const AdminStaff = () => {
     is_active: true,
   });
 
-  useEffect(() => {
-    fetchStaffMembers();
-  }, []);
-
-  const fetchStaffMembers = async () => {
+  // Wrap fetchStaffMembers in useCallback for proper dependency management
+  const fetchStaffMembers = useCallback(async () => {
     setIsLoading(true);
     try {
       // In a real app, we would fetch from Supabase
@@ -55,7 +53,7 @@ const AdminStaff = () => {
         {
           id: 1,
           name: 'Emma Johnson',
-          email: 'emma.j@elegantnails.com',
+          email: 'emma.j@maerchennails.com',
           phone: '(555) 123-4567',
           role: 'Nail Technician',
           specialties: ['Gel Polish', 'Nail Art', 'Manicure'],
@@ -66,7 +64,7 @@ const AdminStaff = () => {
         {
           id: 2,
           name: 'Sophia Rodriguez',
-          email: 'sophia.r@elegantnails.com',
+          email: 'sophia.r@maerchennails.com',
           phone: '(555) 234-5678',
           role: 'Salon Manager',
           specialties: ['Acrylic Extensions', 'Nail Repair', 'Pedicure'],
@@ -77,7 +75,7 @@ const AdminStaff = () => {
         {
           id: 3,
           name: 'Michael Chen',
-          email: 'michael.c@elegantnails.com',
+          email: 'michael.c@maerchennails.com',
           phone: '(555) 345-6789',
           role: 'Nail Technician',
           specialties: ['Pedicure', 'Spa Treatments', 'Paraffin Treatments'],
@@ -88,7 +86,7 @@ const AdminStaff = () => {
         {
           id: 4,
           name: 'Jessica Lee',
-          email: 'jessica.l@elegantnails.com',
+          email: 'jessica.l@maerchennails.com',
           phone: '(555) 456-7890',
           role: 'Nail Technician',
           specialties: ['Gel Polish', 'Nail Art', 'Acrylic Extensions'],
@@ -104,12 +102,16 @@ const AdminStaff = () => {
       setTimeout(() => {
         setIsLoading(false);
       }, 600);
-    } catch (error: any) {
-      console.error('Error fetching staff:', error.message);
+    } catch (error: unknown) {
+      console.error('Error fetching staff:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to load staff members');
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchStaffMembers();
+  }, [fetchStaffMembers]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -224,7 +226,7 @@ const AdminStaff = () => {
       
       setShowModal(false);
     } catch (error: unknown) {
-      console.error('Error saving staff:', error);
+      console.error('Error saving staff:', error instanceof Error ? error.message : String(error));
       toast.error(selectedStaff ? 'Failed to update staff member' : 'Failed to add staff member');
     }
   };
@@ -242,7 +244,7 @@ const AdminStaff = () => {
       
       toast.success('Staff member deleted successfully');
     } catch (error: unknown) {
-      console.error('Error deleting staff:', error);
+      console.error('Error deleting staff:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to delete staff member');
     }
   };
@@ -267,13 +269,18 @@ const AdminStaff = () => {
       
       toast.success(`Staff member ${newStatus ? 'activated' : 'deactivated'} successfully`);
     } catch (error: unknown) {
-      console.error('Error updating staff status:', error);
+      console.error('Error updating staff status:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to update staff status');
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO 
+        title="Staff Management - MäärchenNails"
+        description="Manage your nail salon staff members and specialists"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Staff Management</h1>
         <div className="mt-3 sm:mt-0 sm:ml-4">

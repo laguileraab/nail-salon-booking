@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { FiStar } from 'react-icons/fi';
+import SEO from '../../components/SEO';
 
 type Appointment = {
   id: string;
@@ -21,6 +22,18 @@ type FeedbackFormData = {
   anonymous: boolean;
 };
 
+// Define the structure to match the exact response from Supabase
+interface FeedbackItem {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  appointments: {
+    services: Array<{ name: string }>;
+    start_time: string;
+  };
+}
+
 const Feedback = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,7 +48,7 @@ const Feedback = () => {
     anonymous: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pastFeedback, setPastFeedback] = useState<any[]>([]);
+  const [pastFeedback, setPastFeedback] = useState<FeedbackItem[]>([]);
 
   // Parse query parameters to see if appointment was pre-selected
   useEffect(() => {
@@ -45,7 +58,7 @@ const Feedback = () => {
       setSelectedAppointment(appointmentId);
       setFeedbackForm(prev => ({ ...prev, appointment_id: appointmentId }));
     }
-  }, [location]);
+  }, [location.search]);
 
   // Fetch completed appointments without feedback
   useEffect(() => {
@@ -115,9 +128,29 @@ const Feedback = () => {
 
         if (pastFeedbackError) throw pastFeedbackError;
 
-        setPastFeedback(pastFeedbackData || []);
-      } catch (error: any) {
-        console.error('Error fetching appointments or feedback:', error.message);
+        // Process the feedback data to match our expected structure
+        if (pastFeedbackData) {
+          const processedFeedback = pastFeedbackData.map(item => {
+            // Assuming item.appointments might be an array when it comes from Supabase
+            const appointmentData = Array.isArray(item.appointments) ? item.appointments[0] : item.appointments;
+
+            return {
+              id: item.id,
+              rating: item.rating,
+              comment: item.comment,
+              created_at: item.created_at,
+              appointments: {
+                services: Array.isArray(appointmentData.services) ? appointmentData.services : [appointmentData.services],
+                start_time: appointmentData.start_time
+              }
+            } as FeedbackItem;
+          });
+          setPastFeedback(processedFeedback);
+        } else {
+          setPastFeedback([]);
+        }
+      } catch (error: unknown) {
+        console.error('Error fetching appointments or feedback:', error instanceof Error ? error.message : String(error));
         toast.error('Failed to load your appointments');
       } finally {
         setIsLoading(false);
@@ -179,8 +212,8 @@ const Feedback = () => {
       
       // Refresh the page to update the appointment list
       navigate('/client/feedback');
-    } catch (error: any) {
-      console.error('Error submitting feedback:', error.message);
+    } catch (error: unknown) {
+      console.error('Error submitting feedback:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -217,10 +250,62 @@ const Feedback = () => {
     );
   };
 
+  const renderPastFeedback = () => {
+    if (pastFeedback.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-500">You haven't submitted any feedback yet.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {pastFeedback.map((feedback) => {
+          // Handle the case where services might be an array by safely accessing it
+          const serviceName = feedback.appointments.services?.[0]?.name || 'Unknown Service';
+          
+          return (
+            <div key={feedback.id} className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div className="px-4 py-5 sm:px-6">
+                <div className="flex justify-between">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">{serviceName}</h3>
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <FiStar
+                        key={i}
+                        className={`h-5 w-5 ${i < feedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                  {new Date(feedback.appointments.start_time).toLocaleDateString()} at{' '}
+                  {new Date(feedback.appointments.start_time).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+              <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+                <p className="text-sm text-gray-600">{feedback.comment}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO 
+        title="Provide Feedback - M&auml;rchenNails"
+        description="Share your experience and provide feedback about your nail care services at M&auml;rchenNails"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Feedback</h1>
+        <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Provide Feedback for M&auml;rchenNails</h1>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -326,38 +411,8 @@ const Feedback = () => {
           <div className="border-t border-gray-200">
             {isLoading ? (
               <div className="text-center py-6">Loading...</div>
-            ) : pastFeedback.length > 0 ? (
-              <ul className="divide-y divide-gray-200">
-                {pastFeedback.map((feedback) => (
-                  <li key={feedback.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
-                    <div className="flex flex-col space-y-2">
-                      <div className="flex justify-between">
-                        <h4 className="text-sm font-medium text-gray-900">
-                          {feedback.appointments.services.name}
-                        </h4>
-                        <span className="text-xs text-gray-500">
-                          {new Date(feedback.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <FiStar
-                            key={star}
-                            className={`h-4 w-4 ${star <= feedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                          />
-                        ))}
-                      </div>
-                      {feedback.comment && (
-                        <p className="text-sm text-gray-500">{feedback.comment}</p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
             ) : (
-              <div className="text-center py-6">
-                <p className="text-sm text-gray-500">You haven't submitted any feedback yet.</p>
-              </div>
+              renderPastFeedback()
             )}
           </div>
         </div>

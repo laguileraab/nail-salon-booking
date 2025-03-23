@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { FiUsers, FiCalendar, FiDollarSign, FiStar, FiTrendingUp, FiBarChart2 } from 'react-icons/fi';
+import SEO from '../../components/SEO';
 
 type DashboardStats = {
   totalClients: number;
@@ -25,6 +26,25 @@ type DashboardStats = {
     revenue: number;
   }>;
 };
+
+// Adjusted interfaces to match Supabase data structure
+interface SupabaseAppointment {
+  id: string;
+  start_time: string;
+  status: string;
+  profiles: {
+    first_name?: string;
+    last_name?: string;
+  }[];
+  services: {
+    name?: string;
+    price?: number;
+  }[];
+}
+
+interface FeedbackItem {
+  rating: number;
+}
 
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats>({
@@ -75,26 +95,28 @@ const Dashboard = () => {
         // Calculate statistics
         const now = new Date();
         const upcomingAppointments = appointments?.filter(
-          (appointment: any) => 
+          (appointment: SupabaseAppointment) => 
             new Date(appointment.start_time) >= now && 
             appointment.status === 'scheduled'
         ).length || 0;
 
         const totalRevenue = appointments?.reduce(
-          (sum: number, appointment: any) => sum + (appointment.services?.price || 0), 
+          (sum: number, appointment: SupabaseAppointment) => sum + (appointment.services?.[0]?.price || 0), 
           0
         ) || 0;
 
         const averageRating = feedback?.length
-          ? feedback.reduce((sum: number, item: any) => sum + item.rating, 0) / feedback.length
+          ? feedback.reduce((sum: number, item: FeedbackItem) => sum + item.rating, 0) / feedback.length
           : 0;
 
         // Get popular services
-        const serviceCount = appointments?.reduce((counts: {[key: string]: number}, appointment: any) => {
-          const serviceName = appointment.services?.name;
-          if (serviceName) {
-            counts[serviceName] = (counts[serviceName] || 0) + 1;
-          }
+        const serviceCount = appointments?.reduce((counts: {[key: string]: number}, appointment: SupabaseAppointment) => {
+          appointment.services?.forEach((service) => {
+            const serviceName = service.name;
+            if (serviceName) {
+              counts[serviceName] = (counts[serviceName] || 0) + 1;
+            }
+          });
           return counts;
         }, {});
 
@@ -105,12 +127,14 @@ const Dashboard = () => {
 
         // Get recent appointments
         const recentAppointments = appointments
-          ?.sort((a: any, b: any) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
+          ?.sort((a: SupabaseAppointment, b: SupabaseAppointment) => 
+            new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+          )
           .slice(0, 5)
-          .map((appointment: any) => ({
+          .map((appointment: SupabaseAppointment) => ({
             id: appointment.id,
-            client_name: `${appointment.profiles?.first_name || ''} ${appointment.profiles?.last_name || ''}`,
-            service_name: appointment.services?.name || '',
+            client_name: `${appointment.profiles?.[0]?.first_name || ''} ${appointment.profiles?.[0]?.last_name || ''}`,
+            service_name: appointment.services?.[0]?.name || '',
             start_time: appointment.start_time,
             status: appointment.status,
           }));
@@ -132,8 +156,8 @@ const Dashboard = () => {
           recentAppointments: recentAppointments || [],
           monthlyRevenue,
         });
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+      } catch (error: unknown) {
+        console.error('Error fetching dashboard data:', error instanceof Error ? error.message : String(error));
       } finally {
         setIsLoading(false);
       }
@@ -163,6 +187,11 @@ const Dashboard = () => {
 
   return (
     <div>
+      <SEO 
+        title="Admin Dashboard - Mu00e4rchenNails"
+        description="Admin dashboard for Mu00e4rchenNails with key metrics and insights"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Dashboard</h1>
         <div className="mt-3 sm:mt-0 sm:ml-4">

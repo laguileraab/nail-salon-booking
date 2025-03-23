@@ -1,5 +1,9 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { Toaster } from 'react-hot-toast';
 import './index.css'
 import App from './App.tsx'
 
@@ -51,8 +55,15 @@ const root = createRoot(rootElement);
 // Apply hydration optimizations and error handling
 root.render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
+    <HelmetProvider>
+      <Router>
+        <AuthProvider>
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+          <Toaster position="top-right" />
+        </AuthProvider>
+      </Router>
+    </HelmetProvider>
   </React.StrictMode>
 );

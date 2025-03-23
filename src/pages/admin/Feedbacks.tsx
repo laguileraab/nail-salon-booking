@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { FiSearch, FiStar, FiUser, FiCalendar, FiMessageSquare, FiExternalLink } from 'react-icons/fi';
+import SEO from '../../components/SEO';
 
 type Feedback = {
   id: string;
@@ -22,6 +23,27 @@ type Feedback = {
     };
   };
 };
+
+// Interface for the raw data from Supabase
+interface FeedbackResponse {
+  id: string;
+  user_id: string;
+  appointment_id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  profile: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  }[];
+  appointment: {
+    start_time: string;
+    service: {
+      name: string;
+    }[];
+  }[];
+}
 
 const Feedbacks = () => {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -53,29 +75,20 @@ const Feedbacks = () => {
         if (error) throw error;
         
         // Transform the data to match the Feedback type
-        const transformedData = data?.map((item: any) => ({
+        const transformedData = data?.map((item: FeedbackResponse) => ({
           id: item.id,
           user_id: item.user_id,
           appointment_id: item.appointment_id,
           rating: item.rating,
           comment: item.comment,
           created_at: item.created_at,
-          profile: item.profile ? {
-            first_name: item.profile.first_name,
-            last_name: item.profile.last_name,
-            email: item.profile.email
-          } : undefined,
-          appointment: item.appointment ? {
-            start_time: item.appointment.start_time,
-            service: item.appointment.service ? {
-              name: item.appointment.service.name
-            } : undefined
-          } : undefined
+          profile: item.profile && item.profile.length > 0 ? item.profile[0] : undefined,
+          appointment: item.appointment && item.appointment.length > 0 ? item.appointment[0] : undefined
         })) as Feedback[];
         
         setFeedbacks(transformedData || []);
-      } catch (error: any) {
-        console.error('Error fetching feedbacks:', error.message);
+      } catch (error: unknown) {
+        console.error('Error fetching feedbacks:', error instanceof Error ? error.message : String(error));
         toast.error('Failed to load feedbacks');
       } finally {
         setIsLoading(false);
@@ -154,6 +167,11 @@ const Feedbacks = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
+      <SEO 
+        title="Feedback Management - M\u00e4rchenNails"
+        description="Manage customer feedback and reviews for M\u00e4rchenNails salon services"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Feedback Management</h1>
         <div className="mt-3 sm:mt-0 sm:ml-4">

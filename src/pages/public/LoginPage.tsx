@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
+import SEO from '../../components/SEO';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -25,8 +26,8 @@ const LoginPage = () => {
       }
       toast.success('Successfully logged in!');
       navigate('/client/dashboard');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to login');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to login');
     } finally {
       setIsLoading(false);
     }
@@ -34,6 +35,11 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50">
+      <SEO
+        title="Sign In - M&auml;rchenNails"
+        description="Sign in to your M&auml;rchenNails account to manage your nail salon appointments and profile"
+        ogType="website"
+      />
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
         <p className="mt-2 text-center text-sm text-gray-600">

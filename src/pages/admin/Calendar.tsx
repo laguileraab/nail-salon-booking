@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 // Fix imports to only include what's actually used
 import { format, startOfWeek, endOfWeek, addDays, isSameDay } from 'date-fns';
 // Commenting out unused imports for future use
@@ -8,6 +8,7 @@ import { FiChevronLeft, FiChevronRight, FiCalendar, FiClock, FiUser } from 'reac
 // Commenting out unused imports for future use
 // import { FiEdit, FiX } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
+import SEO from '../../components/SEO';
 
 type Appointment = {
   id: string;
@@ -29,67 +30,93 @@ const Calendar = () => {
   
   // These variables are for future implementation of edit functionality
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editData, setEditData] = useState({
+    id: '',
+    clientId: '',
+    serviceId: '',
+    staffId: '',
+    startTime: new Date(),
+    endTime: new Date(),
+    status: 'confirmed',
+    notes: '',
+  });
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      setIsLoading(true);
-      try {
-        // In a real app, we would fetch from Supabase
-        // const { data, error } = await supabase
-        //   .from('appointments')
-        //   .select('*')
-        //   .gte('startTime', startOfWeek(currentDate).toISOString())
-        //   .lte('startTime', endOfWeek(currentDate).toISOString());
+  // Use useCallback for fetchAppointments to avoid re-creation on every render
+  const fetchAppointments = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // In a real app, we would fetch from Supabase
+      // const { data, error } = await supabase
+      //   .from('appointments')
+      //   .select('*')
+      //   .gte('startTime', startOfWeek(currentDate).toISOString())
+      //   .lte('startTime', endOfWeek(currentDate).toISOString());
+      
+      // if (error) throw error;
+      
+      // For now, we'll use mock data
+      const mockAppointments: Appointment[] = [];
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+      
+      // Generate random appointments
+      for (let i = 0; i < 20; i++) {
+        const randomDay = Math.floor(Math.random() * 7);
+        const randomHour = 9 + Math.floor(Math.random() * 8); // 9am to 5pm
+        const randomDuration = [30, 60, 90][Math.floor(Math.random() * 3)];
         
-        // if (error) throw error;
+        const startTime = new Date(weekStart);
+        startTime.setDate(weekStart.getDate() + randomDay);
+        startTime.setHours(randomHour, 0, 0, 0);
         
-        // For now, we'll use mock data
-        const mockAppointments: Appointment[] = [];
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+        const endTime = new Date(startTime);
+        endTime.setMinutes(endTime.getMinutes() + randomDuration);
         
-        // Generate random appointments
-        for (let i = 0; i < 20; i++) {
-          const randomDay = Math.floor(Math.random() * 7);
-          const randomHour = 9 + Math.floor(Math.random() * 8); // 9am to 5pm
-          const randomDuration = [30, 60, 90][Math.floor(Math.random() * 3)];
-          
-          const startTime = new Date(weekStart);
-          startTime.setDate(weekStart.getDate() + randomDay);
-          startTime.setHours(randomHour, 0, 0, 0);
-          
-          const endTime = new Date(startTime);
-          endTime.setMinutes(endTime.getMinutes() + randomDuration);
-          
-          mockAppointments.push({
-            id: `appt-${i}`,
-            clientName: `Client ${i + 1}`,
-            service: ['Manicure', 'Pedicure', 'Gel Polish', 'Nail Art', 'Full Set'][Math.floor(Math.random() * 5)],
-            startTime,
-            endTime,
-            status: ['confirmed', 'pending', 'cancelled', 'completed'][Math.floor(Math.random() * 4)] as 'confirmed' | 'pending' | 'cancelled' | 'completed',
-            staffMember: ['Jane Smith', 'Emily Johnson', 'Michael Davis'][Math.floor(Math.random() * 3)],
-            notes: Math.random() > 0.5 ? `Special request for appointment ${i + 1}` : undefined
-          });
-        }
-        
-        setTimeout(() => {
-          setAppointments(mockAppointments);
-          setIsLoading(false);
-        }, 500);
-      } catch (error: Error | unknown) {
-        console.error('Error fetching appointments:', error);
-        toast.error('Failed to load appointments');
+        mockAppointments.push({
+          id: `appt-${i}`,
+          clientName: `Client ${i + 1}`,
+          service: ['Manicure', 'Pedicure', 'Gel Polish', 'Nail Art', 'Full Set'][Math.floor(Math.random() * 5)],
+          startTime,
+          endTime,
+          status: ['confirmed', 'pending', 'cancelled', 'completed'][Math.floor(Math.random() * 4)] as 'confirmed' | 'pending' | 'cancelled' | 'completed',
+          staffMember: ['Jane Smith', 'Emily Johnson', 'Michael Davis'][Math.floor(Math.random() * 3)],
+          notes: Math.random() > 0.5 ? `Special request for appointment ${i + 1}` : undefined
+        });
+      }
+      
+      setTimeout(() => {
+        setAppointments(mockAppointments);
         setIsLoading(false);
-      }
-    };
-    
-    fetchAppointments();
-    if (false) {
-      if (isEditModalOpen) {
-        setIsEditModalOpen(false);
-      }
+      }, 500);
+    } catch (error: unknown) {
+      console.error('Error fetching appointments:', error instanceof Error ? error.message : String(error));
+      toast.error('Failed to load appointments');
+      setIsLoading(false);
     }
   }, [currentDate]);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
+
+  // Use effect to properly set edit modal state when appointment is selected or deselected
+  useEffect(() => {
+    if (selectedAppointment) {
+      setEditData({
+        id: selectedAppointment.id,
+        clientId: 'client_id', // Replace with actual client id
+        serviceId: 'service_id', // Replace with actual service id
+        staffId: 'staff_id', // Replace with actual staff id
+        startTime: selectedAppointment.startTime,
+        endTime: selectedAppointment.endTime,
+        status: selectedAppointment.status,
+        notes: selectedAppointment.notes || '',
+      });
+      setIsEditModalOpen(true);
+    } else {
+      // Clear edit modal when appointment is deselected
+      setIsEditModalOpen(false);
+    }
+  }, [selectedAppointment]);
 
   const getDaysToDisplay = () => {
     if (view === 'day') {
@@ -140,8 +167,8 @@ const Calendar = () => {
       }
       
       toast.success(`Appointment status updated to ${newStatus}`);
-    } catch (error: Error | unknown) {
-      console.error('Error updating appointment status:', error);
+    } catch (error: unknown) {
+      console.error('Error updating appointment status:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to update appointment status');
     }
   };
@@ -205,10 +232,37 @@ const Calendar = () => {
     }
   };
 
+  // Add function to handle appointment updates using editData
+  const handleUpdateAppointment = () => {
+    if (!editData.id) return;
+    
+    // In a real implementation, this would update the appointment in Supabase
+    // Example:
+    // const { error } = await supabase
+    //  .from('appointments')
+    //  .update({
+    //    client_id: editData.clientId,
+    //    service_id: editData.serviceId,
+    //    staff_id: editData.staffId,
+    //    start_time: editData.startTime.toISOString(),
+    //    end_time: editData.endTime.toISOString(),
+    //    status: editData.status,
+    //    notes: editData.notes
+    //  })
+    //  .eq('id', editData.id);
+    
+    console.log('Updating appointment with data:', editData);
+    toast.success('Appointment updated successfully');
+    setIsEditModalOpen(false);
+    // Refresh appointments after update
+    // fetchAppointments(); 
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
+      <SEO title="MärchenNails Appointment Calendar" />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Appointment Calendar</h1>
+        <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">MärchenNails Appointment Calendar</h1>
         <div className="mt-3 sm:mt-0 flex">
           <button
             type="button"
@@ -432,6 +486,33 @@ const Calendar = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Add edit modal component */}
+        {isEditModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Edit Appointment</h2>
+              <form onSubmit={(e) => { e.preventDefault(); handleUpdateAppointment(); }}>
+                {/* Form fields would go here */}
+                <div className="mt-4 flex justify-end space-x-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
+                  >
+                    Update
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

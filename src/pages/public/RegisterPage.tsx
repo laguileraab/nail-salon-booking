@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
+import SEO from '../../components/SEO';
 
 const RegisterPage = () => {
   const [firstName, setFirstName] = useState('');
@@ -40,8 +41,8 @@ const RegisterPage = () => {
       }
       toast.success('Account created successfully! Please log in.');
       navigate('/login');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create account');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
@@ -49,6 +50,11 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50">
+      <SEO
+        title="Create Account - MärchenNails"
+        description="Sign up for MärchenNails to book nail salon appointments and access personalized services"
+        ogType="website"
+      />
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
         <p className="mt-2 text-center text-sm text-gray-600">

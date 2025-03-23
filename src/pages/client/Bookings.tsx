@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { FiCalendar, FiClock, FiDollarSign, FiClock as FiDuration } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
+import SEO from '../../components/SEO';
 
 type Service = {
   id: string;
@@ -18,6 +19,14 @@ type TimeSlot = {
   time: string;
   available: boolean;
 };
+
+// Define the structure for booked slots from Supabase
+interface BookedSlot {
+  start_time: string;
+  services: {
+    duration?: number;
+  }[];
+}
 
 const Bookings = () => {
   const navigate = useNavigate();
@@ -38,66 +47,72 @@ const Bookings = () => {
     setSelectedDate(tomorrow.toISOString().split('T')[0]);
   }, []);
 
-  // Fetch services
-  useEffect(() => {
-    const fetchServices = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('services')
-          .select('*')
-          .order('price', { ascending: true });
-
-        if (error) throw error;
-        setServices(data || []);
-      } catch (error: any) {
-        console.error('Error fetching services:', error.message);
-        toast.error('Failed to load services');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchServices();
+  // Fetch services - memoized with useCallback
+  const fetchServices = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      
+      setServices(data || []);
+    } catch (error: unknown) {
+      console.error('Error fetching services:', error instanceof Error ? error.message : String(error));
+      toast.error('Failed to load services');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // Generate time slots
   useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
+
+  // Generate time slots - memoized with useCallback
+  const fetchTimeSlots = useCallback(async () => {
     if (!selectedDate || !selectedService) return;
+    
+    setIsLoading(true);
+    try {
+      // Business hours: 9am to 6pm
+      const businessHours = {
+        start: 9, // 9 AM
+        end: 18, // 6 PM
+      };
 
-    const fetchTimeSlots = async () => {
-      setIsLoading(true);
-      try {
-        // Business hours: 9am to 6pm
-        const businessHours = {
-          start: 9, // 9 AM
-          end: 18, // 6 PM
-        };
+      // Generate time slots in 30-minute intervals
+      const slots: TimeSlot[] = [];
+      const serviceDuration = selectedService.duration;
+      const slotInterval = 30; // minutes
 
-        // Generate time slots in 30-minute intervals
-        const slots: TimeSlot[] = [];
-        const serviceDuration = selectedService.duration;
-        const slotInterval = 30; // minutes
+      // Format the date for query
+      const startDate = new Date(`${selectedDate}T00:00:00`);
+      const endDate = new Date(`${selectedDate}T23:59:59`);
 
-        // Format the date for query
-        const startDate = new Date(`${selectedDate}T00:00:00`);
-        const endDate = new Date(`${selectedDate}T23:59:59`);
+      // Get booked slots from the database
+      const { data: bookedSlots, error } = await supabase
+        .from('appointments')
+        .select('start_time, services:service_id (duration)')
+        .gte('start_time', startDate.toISOString())
+        .lte('start_time', endDate.toISOString())
+        .eq('status', 'scheduled');
 
-        // Get booked slots from the database
-        const { data: bookedSlots, error } = await supabase
-          .from('appointments')
-          .select('start_time, services:service_id (duration)')
-          .gte('start_time', startDate.toISOString())
-          .lte('start_time', endDate.toISOString())
-          .eq('status', 'scheduled');
+      if (error) throw error;
 
-        if (error) throw error;
-
-        // Create a map of unavailable times
-        const unavailableTimes = new Map();
-        bookedSlots?.forEach((booking: any) => {
+      // Create a map of unavailable times
+      const unavailableTimes: Map<string, boolean> = new Map();
+      
+      // Use proper typing for bookedSlots data structure
+      if (bookedSlots) {
+        bookedSlots.forEach((booking: BookedSlot) => {
           const startTime = new Date(booking.start_time);
-          const endTime = new Date(startTime.getTime() + booking.services.duration * 60 * 1000);
+          // Assuming services contains the duration directly or needs to be accessed differently
+          // Adapt this based on the actual structure from your Supabase query
+          const duration = booking.services[0]?.duration || 60; // Default to 60 minutes if not available
+          const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
           
           // Mark all 30-minute slots within the appointment duration as unavailable
           let currentSlot = new Date(startTime);
@@ -109,51 +124,53 @@ const Bookings = () => {
             currentSlot = new Date(currentSlot.getTime() + slotInterval * 60 * 1000);
           }
         });
-
-        // Generate available time slots
-        for (let hour = businessHours.start; hour < businessHours.end; hour++) {
-          for (let minute = 0; minute < 60; minute += slotInterval) {
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            
-            // Check if this slot can accommodate the service duration
-            let isAvailable = true;
-            const startDateTime = new Date(`${selectedDate}T${timeString}:00`);
-            const endDateTime = new Date(startDateTime.getTime() + serviceDuration * 60 * 1000);
-            
-            // Don't offer slots that end after business hours
-            if (endDateTime.getHours() >= businessHours.end) {
-              continue;
-            }
-
-            // Check if any part of the service duration overlaps with unavailable times
-            let checkTime = new Date(startDateTime);
-            while (checkTime < endDateTime) {
-              const checkTimeString = `${checkTime.getHours().toString().padStart(2, '0')}:${checkTime.getMinutes().toString().padStart(2, '0')}`;
-              if (unavailableTimes.has(checkTimeString)) {
-                isAvailable = false;
-                break;
-              }
-              checkTime = new Date(checkTime.getTime() + slotInterval * 60 * 1000);
-            }
-
-            slots.push({
-              time: timeString,
-              available: isAvailable
-            });
-          }
-        }
-
-        setAvailableTimeSlots(slots);
-      } catch (error: any) {
-        console.error('Error generating time slots:', error.message);
-        toast.error('Failed to load available times');
-      } finally {
-        setIsLoading(false);
       }
-    };
 
-    fetchTimeSlots();
+      // Generate available time slots
+      for (let hour = businessHours.start; hour < businessHours.end; hour++) {
+        for (let minute = 0; minute < 60; minute += slotInterval) {
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          
+          // Check if this slot can accommodate the service duration
+          let isAvailable = true;
+          const startDateTime = new Date(`${selectedDate}T${timeString}:00`);
+          const endDateTime = new Date(startDateTime.getTime() + serviceDuration * 60 * 1000);
+          
+          // Don't offer slots that end after business hours
+          if (endDateTime.getHours() >= businessHours.end) {
+            continue;
+          }
+
+          // Check if any part of the service duration overlaps with unavailable times
+          let checkTime = new Date(startDateTime);
+          while (checkTime < endDateTime) {
+            const checkTimeString = `${checkTime.getHours().toString().padStart(2, '0')}:${checkTime.getMinutes().toString().padStart(2, '0')}`;
+            if (unavailableTimes.has(checkTimeString)) {
+              isAvailable = false;
+              break;
+            }
+            checkTime = new Date(checkTime.getTime() + slotInterval * 60 * 1000);
+          }
+
+          slots.push({
+            time: timeString,
+            available: isAvailable
+          });
+        }
+      }
+
+      setAvailableTimeSlots(slots);
+    } catch (error: unknown) {
+      console.error('Error generating time slots:', error instanceof Error ? error.message : String(error));
+      toast.error('Failed to load available times');
+    } finally {
+      setIsLoading(false);
+    }
   }, [selectedDate, selectedService]);
+
+  useEffect(() => {
+    fetchTimeSlots();
+  }, [fetchTimeSlots]);
 
   const formatTime = (timeString: string) => {
     const [hours, minutes] = timeString.split(':');
@@ -236,8 +253,8 @@ const Bookings = () => {
 
       toast.success('Appointment booked successfully!');
       navigate('/client/dashboard');
-    } catch (error: any) {
-      console.error('Error booking appointment:', error.message);
+    } catch (error: unknown) {
+      console.error('Error booking appointment:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to book appointment. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -249,7 +266,7 @@ const Bookings = () => {
       <div className="pb-5 border-b border-gray-200">
         <h3 className="text-lg leading-6 font-medium text-gray-900">Select a Service</h3>
         <p className="mt-2 max-w-4xl text-sm text-gray-500">
-          Choose the service you'd like to book an appointment for.
+          Choose the service you'd like to book an appointment for at Mu00e4rchenNails.
         </p>
       </div>
 
@@ -298,7 +315,7 @@ const Bookings = () => {
       <div className="pb-5 border-b border-gray-200">
         <h3 className="text-lg leading-6 font-medium text-gray-900">Select Date & Time</h3>
         <p className="mt-2 max-w-4xl text-sm text-gray-500">
-          Choose an available date and time slot for your {selectedService?.name} appointment.
+          Choose an available date and time slot for your {selectedService?.name} appointment at Mu00e4rchenNails.
         </p>
       </div>
 
@@ -361,7 +378,7 @@ const Bookings = () => {
       <div className="pb-5 border-b border-gray-200">
         <h3 className="text-lg leading-6 font-medium text-gray-900">Confirm Your Appointment</h3>
         <p className="mt-2 max-w-4xl text-sm text-gray-500">
-          Please review your appointment details before confirming.
+          Please review your appointment details before confirming at Mu00e4rchenNails.
         </p>
       </div>
 
@@ -410,7 +427,7 @@ const Bookings = () => {
           <div className="ml-3">
             <h3 className="text-sm font-medium text-gray-900">Appointment Policy</h3>
             <div className="mt-2 text-sm text-gray-500">
-              <p>Please arrive 10 minutes before your scheduled appointment time. If you need to cancel or reschedule, please do so at least 24 hours in advance to avoid a cancellation fee.</p>
+              <p>Please arrive 10 minutes before your scheduled appointment time at Mu00e4rchenNails. If you need to cancel or reschedule, please do so at least 24 hours in advance to avoid a cancellation fee.</p>
             </div>
           </div>
         </div>
@@ -419,9 +436,14 @@ const Bookings = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO 
+        title="Book an Appointment - Mu00e4rchenNails"
+        description="Schedule your nail service at Mu00e4rchenNails"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Book an Appointment</h1>
+        <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Book an Appointment at Mu00e4rchenNails</h1>
       </div>
 
       {/* Progress Steps */}

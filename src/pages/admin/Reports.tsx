@@ -11,6 +11,7 @@ import {
   FiArrowDown,
   FiDownload
 } from 'react-icons/fi';
+import SEO from '../../components/SEO';
 
 // Date ranges for filtering
 type DateRange = '7days' | '30days' | '90days' | 'year' | 'custom';
@@ -55,74 +56,77 @@ const AdminReports = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [reportData, setReportData] = useState<ReportData | null>(null);
 
-  // Fetch report data based on date range
-  const fetchReportData = async () => {
-    setIsLoading(true);
-    try {
-      // In a real application, we would fetch from Supabase
-      // const { data, error } = await supabase
-      //   .from('appointments')
-      //   .select(...)
-      //   .gte('appointment_date', startDate)
-      //   .lte('appointment_date', endDate);
-      
-      // Instead, we'll use mock data for the demo
-      // Simulating API delay
-      setTimeout(() => {
-        const mockData: ReportData = {
-          revenue: {
-            total: 12580.50,
-            previousPeriod: 10980.25,
-            percentChange: 14.57
-          },
-          appointments: {
-            total: 348,
-            previousPeriod: 310,
-            percentChange: 12.26,
-            completed: 312,
-            canceled: 28,
-            noShow: 8
-          },
-          clients: {
-            total: 156,
-            newClients: 42,
-            returning: 114,
-            percentNew: 26.92
-          },
-          services: {
-            mostPopular: [
-              { name: "Gel Manicure", count: 127, revenue: 3810.00 },
-              { name: "Pedicure", count: 98, revenue: 2940.00 },
-              { name: "Nail Art", count: 76, revenue: 1520.00 },
-              { name: "Full Set Acrylic", count: 62, revenue: 2480.00 },
-              { name: "Manicure", count: 58, revenue: 1160.00 }
-            ]
-          },
-          staff: {
-            topPerforming: [
-              { name: "Jane Smith", appointments: 92, revenue: 3680.00 },
-              { name: "Alice Johnson", appointments: 78, revenue: 3120.00 },
-              { name: "Lisa Brown", appointments: 64, revenue: 2560.00 },
-              { name: "Mark Davis", appointments: 62, revenue: 2480.00 },
-              { name: "Emma Wilson", appointments: 52, revenue: 2080.00 }
-            ]
-          }
-        };
-        setReportData(mockData);
+  useEffect(() => {
+    const fetchReportData = async () => {
+      setIsLoading(true);
+      try {
+        // In a real application, we would fetch from Supabase
+        // const { data, error } = await supabase
+        //   .from('appointments')
+        //   .select(...)
+        //   .gte('appointment_date', startDate)
+        //   .lte('appointment_date', endDate);
+        
+        // Instead, we'll use mock data for the demo
+        // Simulating API delay
+        setTimeout(() => {
+          const mockData: ReportData = {
+            revenue: {
+              total: 12580.50,
+              previousPeriod: 10980.25,
+              percentChange: 14.57
+            },
+            appointments: {
+              total: 348,
+              previousPeriod: 310,
+              percentChange: 12.26,
+              completed: 312,
+              canceled: 28,
+              noShow: 8
+            },
+            clients: {
+              total: 156,
+              newClients: 42,
+              returning: 114,
+              percentNew: 26.92
+            },
+            services: {
+              mostPopular: [
+                { name: "Gel Manicure", count: 127, revenue: 3810.00 },
+                { name: "Pedicure", count: 98, revenue: 2940.00 },
+                { name: "Nail Art", count: 76, revenue: 1520.00 },
+                { name: "Full Set Acrylic", count: 62, revenue: 2480.00 },
+                { name: "Manicure", count: 58, revenue: 1160.00 }
+              ]
+            },
+            staff: {
+              topPerforming: [
+                { name: "Jane Smith", appointments: 92, revenue: 3680.00 },
+                { name: "Alice Johnson", appointments: 78, revenue: 3120.00 },
+                { name: "Lisa Brown", appointments: 64, revenue: 2560.00 },
+                { name: "Mark Davis", appointments: 62, revenue: 2480.00 },
+                { name: "Emma Wilson", appointments: 52, revenue: 2080.00 }
+              ]
+            }
+          };
+          setReportData(mockData);
+          setIsLoading(false);
+        }, 800);
+      } catch (error: unknown) {
+        console.error('Error fetching report data:', error instanceof Error ? error.message : String(error));
+        toast.error('Failed to load report data');
         setIsLoading(false);
-      }, 800);
-    } catch (error: Error | unknown) {
-      console.error('Error fetching report data:', error);
-      toast.error('Failed to load report data');
-      setIsLoading(false);
-    }
-  };
+      }
+    };
+
+    fetchReportData();
+  }, [startDate, endDate]);
 
   // Update date range when selection changes
   const handleDateRangeChange = (range: DateRange) => {
     setDateRange(range);
     const now = new Date();
-    let start = new Date();
+    const start = new Date();
 
     switch (range) {
       case '7days':
@@ -146,11 +150,6 @@ const AdminReports = () => {
     setEndDate(now.toISOString().split('T')[0]);
   };
 
-  // Fetch data when date range changes
-  useEffect(() => {
-    fetchReportData();
-  }, [startDate, endDate, fetchReportData]);
-
   // Helper function to format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -161,7 +160,12 @@ const AdminReports = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO 
+        title="Reports & Analytics - MürchenNails"
+        description="Admin analytics dashboard for MürchenNails salon management system"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Reports & Analytics</h1>
         <div className="mt-3 sm:mt-0 sm:ml-4">

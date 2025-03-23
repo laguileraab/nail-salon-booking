@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 // import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { FiEdit2, FiTrash2, FiPlus, FiX, FiTag, FiCalendar, FiPercent } from 'react-icons/fi';
+import SEO from '../../components/SEO';
 
 interface Promotion {
   id: number;
@@ -103,8 +104,8 @@ const AdminPromotions = () => {
       setTimeout(() => {
         setIsLoading(false);
       }, 600);
-    } catch (error: any) {
-      console.error('Error fetching promotions:', error.message);
+    } catch (error: unknown) {
+      console.error('Error fetching promotions:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to load promotions');
       setIsLoading(false);
     }
@@ -203,8 +204,8 @@ const AdminPromotions = () => {
       }
       
       setShowModal(false);
-    } catch (error: any) {
-      console.error('Error saving promotion:', error.message);
+    } catch (error: unknown) {
+      console.error('Error saving promotion:', error instanceof Error ? error.message : String(error));
       toast.error(selectedPromotion ? 'Failed to update promotion' : 'Failed to add promotion');
     }
   };
@@ -221,8 +222,8 @@ const AdminPromotions = () => {
       setPromotions(prev => prev.filter(promo => promo.id !== id));
       
       toast.success('Promotion deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting promotion:', error.message);
+    } catch (error: unknown) {
+      console.error('Error deleting promotion:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to delete promotion');
     }
   };
@@ -246,8 +247,8 @@ const AdminPromotions = () => {
       );
       
       toast.success(`Promotion ${newStatus ? 'activated' : 'deactivated'} successfully`);
-    } catch (error: any) {
-      console.error('Error updating promotion status:', error.message);
+    } catch (error: unknown) {
+      console.error('Error updating promotion status:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to update promotion status');
     }
   };
@@ -303,6 +304,11 @@ const AdminPromotions = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
+      <SEO 
+        title="Promotions & Discounts - MärchenNails"
+        description="Manage special offers and promotional discounts for MärchenNails salon services"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Promotions & Discounts</h1>
         <div className="mt-3 sm:mt-0 sm:ml-4">

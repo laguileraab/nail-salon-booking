@@ -1,5 +1,11 @@
+/* Tailwind base styles */
+/*! @tailwind base */
 @tailwind base;
+/* Tailwind component styles */
+/*! @tailwind components */
 @tailwind components;
+/* Tailwind utility styles */
+/*! @tailwind utilities */
 @tailwind utilities;
 
 /* Custom styles */

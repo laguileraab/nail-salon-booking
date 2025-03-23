@@ -1,65 +1,93 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
+import { resolve } from 'path';
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => {
+  const isProduction = mode === 'production';
+  
+  return {
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+        manifest: {
+          name: 'Beautiful Nails Salon',
+          short_name: 'Nails Salon',
+          description: 'Book your nail salon appointments online',
+          theme_color: '#ffffff',
+          icons: [
+            {
+              src: 'pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: 'pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png'
+            }
+          ]
+        }
+      })
+    ],
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src')
+      }
     },
-  },
-  css: {
-    postcss: './postcss.config.js',
-  },
-  build: {
-    // Optimize chunk size
-    chunkSizeWarningLimit: 600,
-    // Enable minification and optimization
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
+    css: {
+      // Use PostCSS config file instead of inline configuration
+      // This avoids dynamic requires
+      // The configuration is now in postcss.config.js
     },
-    rollupOptions: {
-      output: {
-        // Split chunks more effectively
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react')) return 'vendor-react'
-            if (id.includes('supabase')) return 'vendor-supabase'
-            if (id.includes('icons')) return 'vendor-icons'
-            return 'vendor' // all other package goes here
+    build: {
+      minify: isProduction,
+      sourcemap: !isProduction,
+      // Increase the chunk size warning limit to avoid unnecessary warnings
+      chunkSizeWarningLimit: 800,
+      rollupOptions: {
+        output: {
+          // Improved manual chunking strategy to reduce bundle sizes
+          manualChunks: (id) => {
+            // Core dependencies
+            if (id.includes('node_modules/react/') || 
+                id.includes('node_modules/react-dom/') || 
+                id.includes('node_modules/react-router-dom/')) {
+              return 'vendor-core';
+            }
+            
+            // UI components
+            if (id.includes('node_modules/react-icons/') || 
+                id.includes('node_modules/react-hot-toast/')) {
+              return 'vendor-ui';
+            }
+            
+            // Auth related dependencies
+            if (id.includes('node_modules/@supabase/') || 
+                id.includes('node_modules/jwt-decode/')) {
+              return 'vendor-auth';
+            }
+            
+            // Date and time libraries
+            if (id.includes('node_modules/date-fns/') || 
+                id.includes('node_modules/dayjs/')) {
+              return 'vendor-datetime';
+            }
+            
+            // Other common third-party libraries
+            if (id.includes('node_modules/')) {
+              return 'vendor-others';
+            }
           }
-        },
-        // Optimize asset naming for better caching
-        assetFileNames: (assetInfo) => {
-          if (!assetInfo.name) return 'assets/[name]-[hash][extname]';
-          
-          const info = assetInfo.name.split('.')
-          const ext = info[info.length - 1]
-          if (/\.(png|jpe?g|gif|svg|webp)$/.test(assetInfo.name)) {
-            return `assets/images/[name]-[hash][extname]`
-          }
-          if (/\.(woff2?|eot|ttf|otf)$/.test(assetInfo.name)) {
-            return `assets/fonts/[name]-[hash][extname]`
-          }
-          if (ext === 'css') {
-            return `assets/css/[name]-[hash][extname]`
-          }
-          return `assets/[name]-[hash][extname]`
-        },
-      },
+        }
+      }
     },
-  },
-  server: {
-    port: 3000,
-    strictPort: true,
-    hmr: {
-      overlay: true,
-    },
-  },
-})
+    server: {
+      port: 3000,
+      open: true
+    }
+  };
+});

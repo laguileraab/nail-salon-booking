@@ -3,6 +3,27 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { FiSave, FiLock, FiUser, FiBell } from 'react-icons/fi';
+import SEO from '../../components/SEO';
+
+interface NotificationPreferences {
+  email_reminders: boolean;
+  email_promotions: boolean;
+  sms_reminders: boolean;
+  sms_promotions: boolean;
+}
+
+interface ProfileFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+}
+
+interface PasswordFormData {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}
 
 const Settings = () => {
   const { profile, updateProfile, signOut } = useAuth();
@@ -10,7 +31,7 @@ const Settings = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Profile form state
-  const [profileForm, setProfileForm] = useState({
+  const [profileForm, setProfileForm] = useState<ProfileFormData>({
     first_name: '',
     last_name: '',
     email: '',
@@ -18,14 +39,14 @@ const Settings = () => {
   });
   
   // Password form state
-  const [passwordForm, setPasswordForm] = useState({
+  const [passwordForm, setPasswordForm] = useState<PasswordFormData>({
     current_password: '',
     new_password: '',
     confirm_password: '',
   });
   
   // Notification preferences state
-  const [notificationPrefs, setNotificationPrefs] = useState({
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
     email_reminders: true,
     email_promotions: false,
     sms_reminders: true,
@@ -53,10 +74,10 @@ const Settings = () => {
           
           if (error) throw error;
           if (data?.notification_preferences) {
-            setNotificationPrefs(data.notification_preferences);
+            setNotificationPrefs(data.notification_preferences as NotificationPreferences);
           }
-        } catch (error) {
-          console.error('Error fetching notification preferences:', error);
+        } catch (error: unknown) {
+          console.error('Error fetching notification preferences:', error instanceof Error ? error.message : String(error));
         }
       };
       
@@ -104,9 +125,9 @@ const Settings = () => {
       if (error) throw error;
       
       toast.success('Profile updated successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
-      console.error('Error updating profile:', error);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
+      console.error('Error updating profile:', error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);
     }
@@ -143,9 +164,9 @@ const Settings = () => {
       });
       
       toast.success('Password updated successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update password');
-      console.error('Error updating password:', error);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update password');
+      console.error('Error updating password:', error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);
     }
@@ -166,9 +187,9 @@ const Settings = () => {
       if (error) throw error;
       
       toast.success('Notification preferences updated');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update notification preferences');
-      console.error('Error updating notification preferences:', error);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update notification preferences');
+      console.error('Error updating notification preferences:', error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoading(false);
     }
@@ -185,15 +206,20 @@ const Settings = () => {
         
         await signOut();
         toast.success('Account deleted successfully');
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to delete account');
-        console.error('Error deleting account:', error);
+      } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : 'Failed to delete account');
+        console.error('Error deleting account:', error instanceof Error ? error.message : String(error));
       }
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO 
+        title="Account Settings - MärchenNails"
+        description="Manage your MärchenNails account settings, profile information, and notification preferences"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200">
         <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Account Settings</h1>
         <p className="mt-1 text-sm text-gray-500">Manage your account information and preferences</p>

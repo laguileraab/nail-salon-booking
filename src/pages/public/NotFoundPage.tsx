@@ -1,8 +1,14 @@
 import { Link } from 'react-router-dom';
+import SEO from '../../components/SEO';
 
 const NotFoundPage = () => {
   return (
     <div className="min-h-screen bg-white px-4 py-16 sm:px-6 sm:py-24 md:grid md:place-items-center lg:px-8">
+      <SEO 
+        title="Page Not Found - MärchenNails"
+        description="The requested page could not be found on the MärchenNails website."
+        ogType="website"
+      />
       <div className="max-w-max mx-auto">
         <main className="sm:flex">
           <p className="text-4xl font-extrabold text-accent-600 sm:text-5xl">404</p>

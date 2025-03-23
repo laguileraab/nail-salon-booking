@@ -1,17 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { FiSearch, FiUser, FiMail, FiPhone, FiCalendar, FiEdit, FiEye } from 'react-icons/fi';
+import SEO from '../../components/SEO';
 
-type Client = {
+// Add proper interface for client data
+interface Client {
   id: string;
   first_name: string;
   last_name: string;
   email: string;
-  phone?: string;
+  phone: string | null;
   created_at: string;
+  last_login: string | null;
+  is_active: boolean;
   appointment_count?: number;
-};
+}
+
+interface Appointment {
+  id: string;
+  start_time: string;
+  status: string;
+  services: {
+    name: string;
+    price: number;
+  }[];
+}
+
+interface AppointmentResponse {
+  id: string;
+  start_time: string;
+  status: string;
+  services: {
+    name: string;
+    price: number;
+  }[];
+}
 
 const Clients = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -19,7 +43,7 @@ const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [clientAppointments, setClientAppointments] = useState<any[]>([]);
+  const [clientAppointments, setClientAppointments] = useState<Appointment[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' }>({ 
     key: 'created_at', 
     direction: 'descending' 
@@ -57,8 +81,8 @@ const Clients = () => {
         );
 
         setClients(clientsWithAppointmentCount);
-      } catch (error: any) {
-        console.error('Error fetching clients:', error.message);
+      } catch (error: unknown) {
+        console.error('Error fetching clients:', error instanceof Error ? error.message : String(error));
         toast.error('Failed to load clients');
       } finally {
         setIsLoading(false);
@@ -73,33 +97,46 @@ const Clients = () => {
   };
 
   const handleSort = (key: string) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
+    const direction: 'ascending' | 'descending' = sortConfig.key === key && sortConfig.direction === 'ascending' ? 'descending' : 'ascending';
     setSortConfig({ key, direction });
   };
 
-  const sortedClients = () => {
-    const sorted = [...clients];
-    sorted.sort((a, b) => {
-      const aValue = a[sortConfig.key as keyof Client];
-      const bValue = b[sortConfig.key as keyof Client];
-      
-      if (aValue === undefined || bValue === undefined) return 0;
-      
-      if (aValue < bValue) {
-        return sortConfig.direction === 'ascending' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === 'ascending' ? 1 : -1;
-      }
-      return 0;
-    });
-    return sorted;
-  };
+  const sortedClients = useMemo(() => {
+    if (!clients) return [];
+    
+    const sortableItems = [...clients];
+    if (sortConfig) {
+      sortableItems.sort((a, b) => {
+        const key = sortConfig.key as keyof Client;
+        const aValue: string | number | null = a[key] as string | number | null;
+        const bValue: string | number | null = b[key] as string | number | null;
+        
+        // Handle null values
+        if (aValue === null && bValue === null) return 0;
+        if (aValue === null) return 1;
+        if (bValue === null) return -1;
+        
+        // String comparison
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          if (sortConfig.direction === 'ascending') {
+            return aValue.localeCompare(bValue);
+          } else {
+            return bValue.localeCompare(aValue);
+          }
+        }
+        
+        // Number comparison
+        if (sortConfig.direction === 'ascending') {
+          return Number(aValue) - Number(bValue);
+        } else {
+          return Number(bValue) - Number(aValue);
+        }
+      });
+    }
+    return sortableItems;
+  }, [clients, sortConfig]);
 
-  const filteredClients = sortedClients().filter(client => {
+  const filteredClients = sortedClients.filter(client => {
     const searchLower = searchTerm.toLowerCase();
     return (
       client.first_name.toLowerCase().includes(searchLower) ||
@@ -130,21 +167,32 @@ const Clients = () => {
           id,
           start_time,
           status,
-          services:service_id (name, price)
+          services (name, price)
         `)
         .eq('user_id', client.id)
         .order('start_time', { ascending: false });
 
       if (error) throw error;
-      setClientAppointments(data || []);
-    } catch (error: any) {
-      console.error('Error fetching client appointments:', error.message);
+      const formattedAppointments: Appointment[] = data?.map((item: AppointmentResponse) => ({
+        id: item.id,
+        start_time: item.start_time,
+        status: item.status,
+        services: item.services
+      })) || [];
+      setClientAppointments(formattedAppointments);
+    } catch (error: unknown) {
+      console.error('Error fetching client appointments:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to load client appointments');
     }
   };
 
   return (
     <div className="max-w-7xl mx-auto">
+      <SEO 
+        title="Client Management - Mu00e4rchenNails"
+        description="Manage your Mu00e4rchenNails salon clients and their appointment history"
+        ogType="website"
+      />
       <div className="pb-5 border-b border-gray-200 sm:flex sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl">Clients</h1>
         <div className="mt-3 sm:mt-0 sm:ml-4">
@@ -315,14 +363,14 @@ const Clients = () => {
                               <li key={appointment.id} className="py-3">
                                 <div className="flex justify-between">
                                   <div>
-                                    <p className="text-sm font-medium text-gray-900">{appointment.services.name}</p>
+                                    <p className="text-sm font-medium text-gray-900">{appointment.services[0].name}</p>
                                     <p className="text-sm text-gray-500">
                                       {formatDate(appointment.start_time)}
                                     </p>
                                   </div>
                                   <div className="flex flex-col items-end">
                                     <p className="text-sm font-medium text-gray-900">
-                                      ${appointment.services.price.toFixed(2)}
+                                      ${appointment.services[0].price.toFixed(2)}
                                     </p>
                                     <span
                                       className={`text-xs px-2 py-1 rounded-full ${appointment.status === 'scheduled' ? 'bg-blue-100 text-blue-800' : appointment.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}

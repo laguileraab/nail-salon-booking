@@ -1,50 +1,41 @@
-import { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
+import { FiHome, FiCalendar, FiUsers, FiMessageSquare, FiScissors, FiBarChart2, FiSettings, FiMenu, FiX, FiUserPlus, FiTag, FiLogOut } from 'react-icons/fi';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
-import {
-  FiHome,
-  FiCalendar,
-  FiUsers,
-  FiMessageSquare,
-  FiScissors,
-  FiBarChart2,
-  FiSettings,
-  FiLogOut,
-  FiMenu,
-  FiX,
-  FiUserPlus,
-  FiTag
-} from 'react-icons/fi';
+import SEO from '../components/SEO';
 
-const AdminLayout = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
+interface NavItem {
+  name: string;
+  path: string;
+  icon: React.ReactNode;
+}
+
+const AdminLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
-  const navigation = [
-    { name: 'Dashboard', to: '/admin', icon: FiHome },
-    { name: 'Calendar', to: '/admin/calendar', icon: FiCalendar },
-    { name: 'Clients', to: '/admin/clients', icon: FiUsers },
-    { name: 'Staff', to: '/admin/staff', icon: FiUserPlus },
-    { name: 'Services', to: '/admin/services', icon: FiScissors },
-    { name: 'Promotions', to: '/admin/promotions', icon: FiTag },
-    { name: 'Feedbacks', to: '/admin/feedbacks', icon: FiMessageSquare },
-    { name: 'Reports', to: '/admin/reports', icon: FiBarChart2 },
-    { name: 'Settings', to: '/admin/settings', icon: FiSettings },
-  ];
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+  // Get current page title from pathname
+  const getCurrentPageTitle = (): string => {
+    const path = pathname.split('/').pop() || '';
+    return path.charAt(0).toUpperCase() + path.slice(1);
   };
 
-  const isActive = (path: string) => {
-    // Handle index route specially
-    if (path === '/admin' && location.pathname === '/admin') {
-      return true;
-    }
-    // For other routes, check if location.pathname starts with the path
-    return path !== '/admin' && location.pathname.startsWith(path);
+  const navItems: NavItem[] = [
+    { name: 'Dashboard', path: '/admin', icon: <FiHome className="mr-3 h-5 w-5" /> },
+    { name: 'Calendar', path: '/admin/calendar', icon: <FiCalendar className="mr-3 h-5 w-5" /> },
+    { name: 'Clients', path: '/admin/clients', icon: <FiUsers className="mr-3 h-5 w-5" /> },
+    { name: 'Staff', path: '/admin/staff', icon: <FiUserPlus className="mr-3 h-5 w-5" /> },
+    { name: 'Services', path: '/admin/services', icon: <FiScissors className="mr-3 h-5 w-5" /> },
+    { name: 'Promotions', path: '/admin/promotions', icon: <FiTag className="mr-3 h-5 w-5" /> },
+    { name: 'Feedbacks', path: '/admin/feedbacks', icon: <FiMessageSquare className="mr-3 h-5 w-5" /> },
+    { name: 'Reports', path: '/admin/reports', icon: <FiBarChart2 className="mr-3 h-5 w-5" /> },
+    { name: 'Settings', path: '/admin/settings', icon: <FiSettings className="mr-3 h-5 w-5" /> },
+  ];
+
+  const toggleMobileMenu = (): void => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   const handleSignOut = async () => {
@@ -52,38 +43,95 @@ const AdminLayout = () => {
       await supabase.auth.signOut();
       navigate('/login');
       toast.success('Signed out successfully');
-    } catch (error: Error | unknown) {
-      console.error('Error signing out:', error);
+    } catch (error) {
       toast.error('Error signing out');
+      console.error('Error signing out:', error);
     }
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100">
+    <div className="min-h-screen bg-gray-100">
+      <SEO 
+        title={`${getCurrentPageTitle()} - Admin Dashboard`}
+        description="Admin management dashboard for Beautiful Nails Salon"
+        ogType="website"
+      />
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed top-0 right-0 p-4 z-50">
+        <button
+          onClick={toggleMobileMenu}
+          className="bg-primary text-white p-2 rounded-md"
+          aria-label="Toggle mobile menu"
+        >
+          {isMobileMenuOpen ? <FiX className="h-6 w-6" /> : <FiMenu className="h-6 w-6" />}
+        </button>
+      </div>
+
       {/* Sidebar for desktop */}
-      <div className="hidden md:flex md:flex-shrink-0">
-        <div className="flex flex-col w-64">
-          <div className="flex flex-col h-0 flex-1 bg-white shadow">
-            <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-              <div className="flex items-center flex-shrink-0 px-4">
-                <span className="text-xl font-bold text-accent-600">NailSalon Admin</span>
-              </div>
-              <nav className="mt-5 flex-1 px-2 space-y-1">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.to}
-                    className={`${isActive(item.to) ? 'bg-accent-50 text-accent-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'} group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
-                  >
-                    <item.icon
-                      className={`${isActive(item.to) ? 'text-accent-500' : 'text-gray-400 group-hover:text-gray-500'} mr-3 flex-shrink-0 h-6 w-6`}
-                      aria-hidden="true"
-                    />
-                    {item.name}
-                  </Link>
-                ))}
-              </nav>
+      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:border-r lg:border-gray-200 lg:bg-white lg:pt-5 lg:pb-4">
+        <div className="flex items-center justify-center flex-shrink-0 px-6">
+          <span className="text-xl font-bold text-accent-600">NailSalon Admin</span>
+        </div>
+        <div className="mt-8 flex-1 flex flex-col overflow-y-auto">
+          <nav className="flex-1 px-4 space-y-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`group flex items-center px-3 py-3 text-sm font-medium rounded-md ${
+                  pathname === item.path || pathname.startsWith(item.path + '/')
+                    ? 'bg-primary text-white'
+                    : 'text-gray-700 hover:bg-primary hover:text-white'
+                }`}
+              >
+                {item.icon}
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+          <button
+            onClick={handleSignOut}
+            className="flex-shrink-0 group block w-full flex items-center text-sm font-medium text-gray-600 hover:text-gray-900"
+          >
+            <FiLogOut className="mr-3 flex-shrink-0 h-6 w-6 text-gray-400 group-hover:text-gray-500" />
+            Sign Out
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile menu, show/hide based on state */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-40">
+          <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-white shadow-xl z-50 overflow-y-auto">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4">
+              <span className="text-xl font-bold text-accent-600">NailSalon Admin</span>
+              <button
+                onClick={toggleMobileMenu}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label="Close menu"
+              >
+                <FiX className="h-6 w-6" />
+              </button>
             </div>
+            <nav className="px-6 pb-6 space-y-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-md ${
+                    pathname === item.path || pathname.startsWith(item.path + '/')
+                      ? 'bg-primary text-white'
+                      : 'text-gray-700 hover:bg-primary hover:text-white'
+                  }`}
+                  onClick={toggleMobileMenu}
+                >
+                  {item.icon}
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
             <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
               <button
                 onClick={handleSignOut}
@@ -95,83 +143,12 @@ const AdminLayout = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Mobile menu */}
-      <div className="md:hidden fixed inset-0 flex z-40" style={{ display: isMobileMenuOpen ? 'flex' : 'none' }}>
-        <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75"
-          aria-hidden="true"
-          onClick={toggleMobileMenu}
-        ></div>
-
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
-            <button
-              type="button"
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={toggleMobileMenu}
-            >
-              <span className="sr-only">Close menu</span>
-              <FiX className="h-6 w-6 text-white" aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div className="flex-shrink-0 flex items-center px-4">
-              <span className="text-xl font-bold text-accent-600">NailSalon Admin</span>
-            </div>
-            <nav className="mt-5 px-2 space-y-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.to}
-                  className={`${isActive(item.to) ? 'bg-accent-50 text-accent-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'} group flex items-center px-2 py-2 text-base font-medium rounded-md`}
-                  onClick={toggleMobileMenu}
-                >
-                  <item.icon
-                    className={`${isActive(item.to) ? 'text-accent-500' : 'text-gray-400 group-hover:text-gray-500'} mr-3 flex-shrink-0 h-6 w-6`}
-                    aria-hidden="true"
-                  />
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-            <button
-              onClick={handleSignOut}
-              className="flex-shrink-0 group block w-full flex items-center text-base font-medium text-gray-600 hover:text-gray-900"
-            >
-              <FiLogOut className="mr-3 flex-shrink-0 h-6 w-6 text-gray-400 group-hover:text-gray-500" />
-              Sign Out
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-shrink-0 w-14">{/* Spacer element */}</div>
-      </div>
+      )}
 
       {/* Main content */}
-      <div className="flex flex-col w-0 flex-1 overflow-hidden">
-        {/* Top mobile header */}
-        <div className="md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3 bg-white shadow z-10">
-          <button
-            type="button"
-            className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-accent-500"
-            onClick={toggleMobileMenu}
-          >
-            <span className="sr-only">Open sidebar</span>
-            <FiMenu className="h-6 w-6" aria-hidden="true" />
-          </button>
-        </div>
-
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              <Outlet />
-            </div>
-          </div>
+      <div className="lg:pl-64">
+        <main className="py-6 px-4 sm:px-6 lg:px-8">
+          <Outlet />
         </main>
       </div>
     </div>

@@ -1,7 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './contexts/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 
 // Layouts
@@ -56,54 +54,49 @@ const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.Re
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Toaster position="top-right" />
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            {/* Public routes */}
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/booking" element={<Booking />} />
-              <Route path="/booking/:serviceId" element={<Booking />} />
-              <Route path="/booking/success" element={<BookingSuccess />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-            
-            {/* Client routes */}
-            <Route path="/client" element={
-              <ProtectedRoute>
-                <DashboardLayout userType="client" />
-              </ProtectedRoute>
-            }>
-              <Route path="dashboard" element={<ClientDashboard />} />
-              <Route path="bookings" element={<ClientBookings />} />
-              <Route path="feedback" element={<ClientFeedback />} />
-              <Route path="settings" element={<ClientSettings />} />
-            </Route>
-            
-            {/* Admin routes */}
-            <Route path="/admin" element={
-              <ProtectedRoute requireAdmin>
-                <AdminLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<AdminDashboard />} />
-              <Route path="calendar" element={<AdminCalendar />} />
-              <Route path="clients" element={<AdminClients />} />
-              <Route path="feedbacks" element={<AdminFeedbacks />} />
-              <Route path="services" element={<AdminServices />} />
-              <Route path="staff" element={<AdminStaff />} />
-              <Route path="promotions" element={<AdminPromotions />} />
-              <Route path="reports" element={<AdminReports />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </AuthProvider>
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        {/* Public routes */}
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/booking" element={<Booking />} />
+          <Route path="/booking/:serviceId" element={<Booking />} />
+          <Route path="/booking/success" element={<BookingSuccess />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+        
+        {/* Client routes */}
+        <Route path="/client" element={
+          <ProtectedRoute>
+            <DashboardLayout userType="client" />
+          </ProtectedRoute>
+        }>
+          <Route path="dashboard" element={<ClientDashboard />} />
+          <Route path="bookings" element={<ClientBookings />} />
+          <Route path="feedback" element={<ClientFeedback />} />
+          <Route path="settings" element={<ClientSettings />} />
+        </Route>
+        
+        {/* Admin routes */}
+        <Route path="/admin" element={
+          <ProtectedRoute requireAdmin>
+            <AdminLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<AdminDashboard />} />
+          <Route path="calendar" element={<AdminCalendar />} />
+          <Route path="clients" element={<AdminClients />} />
+          <Route path="feedbacks" element={<AdminFeedbacks />} />
+          <Route path="services" element={<AdminServices />} />
+          <Route path="staff" element={<AdminStaff />} />
+          <Route path="promotions" element={<AdminPromotions />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }
 

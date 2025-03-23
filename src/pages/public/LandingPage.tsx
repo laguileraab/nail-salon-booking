@@ -85,12 +85,12 @@ const LandingPage = () => {
                 </Link>
               </div>
               <div className="mt-3 sm:mt-0 sm:ml-3">
-                <Link
-                  to="/services"
+                <a
+                  href="#services"
                   className={`w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md ${theme === 'dark' ? 'text-gray-200 bg-gray-800 hover:bg-gray-700' : 'text-accent-700 bg-accent-100 hover:bg-accent-200'} md:py-4 md:text-lg md:px-10`}
                 >
                   {language === 'de' ? 'Unsere Services' : language === 'es' ? 'Nuestros servicios' : 'Our Services'}
-                </Link>
+                </a>
               </div>
             </div>
           </div>
@@ -144,17 +144,31 @@ const LandingPage = () => {
                       }}
                     />
                   </div>
-                  <div className="flex-1 bg-white p-6 flex flex-col justify-between dark:bg-gray-800">
+                  <div className={`flex-1 p-6 flex flex-col justify-between ${theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
                     <div className="flex-1">
-                      <p className="text-xl font-semibold text-gray-900 dark:text-white">{service.name}</p>
-                      <p className="mt-3 text-base text-gray-500 dark:text-gray-200">{service.description}</p>
+                      <p className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        {language === 'de' ? 
+                          service.name === 'Manicure' ? 'Maniküre' : 
+                          service.name === 'Pedicure' ? 'Pediküre' :
+                          service.name === 'Gel Nails' ? 'Gel-Nägel' :
+                          service.name === 'Acrylic Extensions' ? 'Acryl-Verlängerungen' : service.name
+                          : 
+                          language === 'es' ? 
+                          service.name === 'Manicure' ? 'Manicura' :
+                          service.name === 'Pedicure' ? 'Pedicura' :
+                          service.name === 'Gel Nails' ? 'Uñas de Gel' :
+                          service.name === 'Acrylic Extensions' ? 'Extensiones Acrílicas' : service.name
+                          : 
+                          service.name}
+                      </p>
+                      <p className={`mt-3 text-base ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>{service.description}</p>
                     </div>
                     <div className="mt-4 flex items-center justify-between">
                       <div>
-                        <span className="text-accent-600 font-bold">€{service.price}</span>
-                        <span className="text-gray-500 text-sm ml-1">/ {service.duration} min</span>
+                        <span className={`${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'} font-bold`}>€{service.price}</span>
+                        <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-sm ml-1`}>/ {service.duration} min</span>
                       </div>
-                      <Link to={`/booking/${service.id}`} className="text-accent-600 hover:text-accent-800 font-medium dark:text-gray-200">
+                      <Link to={`/booking/${service.id}`} className={`${theme === 'dark' ? 'text-accent-400 hover:text-accent-300' : 'text-accent-600 hover:text-accent-800'} font-medium`}>
                         {language === 'de' ? 'Jetzt buchen' : language === 'es' ? 'Reservar ahora' : 'Book Now'} →
                       </Link>
                     </div>
@@ -327,19 +341,11 @@ const LandingPage = () => {
                     </svg>
                   </div>
                   <div className="ml-3 text-base text-gray-500 dark:text-gray-200">
-                    <p className="font-medium">Business Hours:</p>
-                    <p>Monday - Saturday: 9AM - 7PM</p>
-                    <p>Sunday: 10AM - 5PM</p>
+                    <p className="font-medium">{language === 'de' ? 'Geschäftszeiten:' : language === 'es' ? 'Horario comercial:' : 'Business Hours:'}</p>
+                    <p>{language === 'de' ? 'Montag - Samstag: 9:00 - 19:00 Uhr' : language === 'es' ? 'Lunes - Sábado: 9:00 - 19:00' : 'Monday - Saturday: 9AM - 7PM'}</p>
+                    <p>{language === 'de' ? 'Sonntag: 10:00 - 17:00 Uhr' : language === 'es' ? 'Domingo: 10:00 - 17:00' : 'Sunday: 10AM - 5PM'}</p>
                   </div>
                 </div>
-              </div>
-              <div className="mt-6">
-                <Link
-                  to="/services#contact"
-                  className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-accent-600 hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-500"
-                >
-                  {language === 'de' ? 'Support kontaktieren' : language === 'es' ? 'Contactar soporte' : 'Contact Support'} →
-                </Link>
               </div>
             </div>
           </div>

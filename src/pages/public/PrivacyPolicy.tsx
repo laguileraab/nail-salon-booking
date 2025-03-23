@@ -11,10 +11,10 @@ const PrivacyPolicy = () => {
       case 'de':
         return (
           <>
-            <h1 className="text-3xl font-bold mb-6">Datenschutzerklärung</h1>
+            <h1 className={`text-3xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Datenschutzerklärung</h1>
             <div className="space-y-6">
               <section>
-                <h2 className="text-xl font-semibold mb-3">1. Verantwortliche Stelle</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>1. Verantwortliche Stelle</h2>
                 <p>Verantwortliche Stelle im Sinne der Datenschutzgesetze ist:</p>
                 <p className="mt-2">
                   MärchenNails<br />
@@ -24,7 +24,7 @@ const PrivacyPolicy = () => {
                 </p>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">2. Erhebung und Verwendung personenbezogener Daten</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>2. Erhebung und Verwendung personenbezogener Daten</h2>
                 <p>Wir erheben personenbezogene Daten nur, wenn Sie uns diese freiwillig mitteilen, z.B. bei der Registrierung, der Buchung von Terminen oder der Kontaktaufnahme.</p>
                 <p className="mt-2">Zu den von uns erhobenen Daten können gehören:</p>
                 <ul className="list-disc pl-5 mt-2">
@@ -35,15 +35,15 @@ const PrivacyPolicy = () => {
                 </ul>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">3. Cookies</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>3. Cookies</h2>
                 <p>Unsere Website verwendet Cookies. Nähere Informationen dazu finden Sie in unserer Cookie-Richtlinie.</p>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">4. Datensicherheit</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>4. Datensicherheit</h2>
                 <p>Wir setzen technische und organisatorische Sicherheitsmaßnahmen ein, um Ihre personenbezogenen Daten gegen Verlust, Zerstörung, Manipulation und unberechtigten Zugriff zu schützen.</p>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">5. Ihre Rechte</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>5. Ihre Rechte</h2>
                 <p>Nach der DSGVO haben Sie folgende Rechte:</p>
                 <ul className="list-disc pl-5 mt-2">
                   <li>Recht auf Auskunft</li>
@@ -55,7 +55,7 @@ const PrivacyPolicy = () => {
                 </ul>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">6. Kontakt</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>6. Kontakt</h2>
                 <p>Bei Fragen zur Verarbeitung Ihrer personenbezogenen Daten oder zur Ausübung Ihrer Rechte können Sie sich an uns wenden:</p>
                 <p className="mt-2">kontakt@maerchennails.com</p>
               </section>
@@ -66,10 +66,10 @@ const PrivacyPolicy = () => {
       case 'es':
         return (
           <>
-            <h1 className="text-3xl font-bold mb-6">Política de Privacidad</h1>
+            <h1 className={`text-3xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Política de Privacidad</h1>
             <div className="space-y-6">
               <section>
-                <h2 className="text-xl font-semibold mb-3">1. Responsable del Tratamiento</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>1. Responsable del Tratamiento</h2>
                 <p>El responsable del tratamiento de datos según las leyes de protección de datos es:</p>
                 <p className="mt-2">
                   MärchenNails<br />
@@ -79,7 +79,7 @@ const PrivacyPolicy = () => {
                 </p>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">2. Recogida y Uso de Datos Personales</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>2. Recogida y Uso de Datos Personales</h2>
                 <p>Recogemos datos personales solo si usted nos los proporciona voluntariamente, por ejemplo, al registrarse, reservar citas o contactar con nosotros.</p>
                 <p className="mt-2">Los datos que podemos recoger incluyen:</p>
                 <ul className="list-disc pl-5 mt-2">
@@ -90,15 +90,15 @@ const PrivacyPolicy = () => {
                 </ul>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">3. Cookies</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>3. Cookies</h2>
                 <p>Nuestro sitio web utiliza cookies. Puede encontrar más información en nuestra Política de Cookies.</p>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">4. Seguridad de los Datos</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>4. Seguridad de los Datos</h2>
                 <p>Utilizamos medidas de seguridad técnicas y organizativas para proteger sus datos personales contra la pérdida, destrucción, manipulación y acceso no autorizado.</p>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">5. Sus Derechos</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>5. Sus Derechos</h2>
                 <p>De acuerdo con el RGPD, usted tiene los siguientes derechos:</p>
                 <ul className="list-disc pl-5 mt-2">
                   <li>Derecho de acceso</li>
@@ -110,7 +110,7 @@ const PrivacyPolicy = () => {
                 </ul>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">6. Contacto</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>6. Contacto</h2>
                 <p>Si tiene preguntas sobre el tratamiento de sus datos personales o para ejercer sus derechos, puede ponerse en contacto con nosotros:</p>
                 <p className="mt-2">contacto@maerchennails.com</p>
               </section>
@@ -121,10 +121,10 @@ const PrivacyPolicy = () => {
       default: // English
         return (
           <>
-            <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
+            <h1 className={`text-3xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Privacy Policy</h1>
             <div className="space-y-6">
               <section>
-                <h2 className="text-xl font-semibold mb-3">1. Data Controller</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>1. Data Controller</h2>
                 <p>The data controller according to data protection laws is:</p>
                 <p className="mt-2">
                   MärchenNails<br />
@@ -134,7 +134,7 @@ const PrivacyPolicy = () => {
                 </p>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">2. Collection and Use of Personal Data</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>2. Collection and Use of Personal Data</h2>
                 <p>We collect personal data only if you voluntarily provide it to us, e.g., when registering, booking appointments, or contacting us.</p>
                 <p className="mt-2">The data we may collect includes:</p>
                 <ul className="list-disc pl-5 mt-2">
@@ -145,15 +145,15 @@ const PrivacyPolicy = () => {
                 </ul>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">3. Cookies</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>3. Cookies</h2>
                 <p>Our website uses cookies. More information can be found in our Cookie Policy.</p>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">4. Data Security</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>4. Data Security</h2>
                 <p>We employ technical and organizational security measures to protect your personal data against loss, destruction, manipulation, and unauthorized access.</p>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">5. Your Rights</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>5. Your Rights</h2>
                 <p>According to the GDPR, you have the following rights:</p>
                 <ul className="list-disc pl-5 mt-2">
                   <li>Right to information</li>
@@ -165,7 +165,7 @@ const PrivacyPolicy = () => {
                 </ul>
               </section>
               <section>
-                <h2 className="text-xl font-semibold mb-3">6. Contact</h2>
+                <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>6. Contact</h2>
                 <p>If you have questions about the processing of your personal data or to exercise your rights, you can contact us:</p>
                 <p className="mt-2">contact@maerchennails.com</p>
               </section>
@@ -182,13 +182,13 @@ const PrivacyPolicy = () => {
         title={language === 'de' ? 'MärchenNails - Datenschutzerklärung' : 
               language === 'es' ? 'MärchenNails - Política de Privacidad' : 
               'MärchenNails - Privacy Policy'}
-        description="Privacy Policy for MärchenNails nail salon services"
+        description={language === 'de' ? 'Datenschutzerklärung für MärchenNails' : 
+                     language === 'es' ? 'Política de privacidad para MärchenNails' : 
+                     'Privacy policy for MärchenNails nail salon services'}
         ogType="website"
       />
       <div className="container max-w-4xl mx-auto px-4 py-12">
-        <div className={`prose ${theme === 'dark' ? 'prose-invert' : ''} max-w-none`}>
-          {getContent()}
-        </div>
+        {getContent()}
       </div>
     </div>
   );

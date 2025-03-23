@@ -17,13 +17,13 @@ const LegalNotice: React.FC = () => {
         ogType="website"
       />
       <div className="container max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8 text-accent-600">
+        <h1 className={`text-3xl font-bold mb-8 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           {translations[language]['nav.legal'] || 'Legal Notice'}
         </h1>
 
         <div className={`prose ${theme === 'dark' ? 'prose-dark' : ''} space-y-6`}>
           <section>
-            <h2 className="text-xl font-semibold mb-3 text-accent-500">1. Company Information</h2>
+            <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>1. Company Information</h2>
             <p className="mb-2">
               MärchenNails GmbH<br />
               Hauptstraße 123<br />
@@ -42,7 +42,7 @@ const LegalNotice: React.FC = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3 text-accent-500">2. Responsible for Content</h2>
+            <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>2. Responsible for Content</h2>
             <p>
               Emma Schmidt<br />
               CEO, MärchenNails GmbH<br />
@@ -51,7 +51,7 @@ const LegalNotice: React.FC = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3 text-accent-500">3. Disclaimer</h2>
+            <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>3. Disclaimer</h2>
             <h3 className="font-medium mb-2">3.1 Liability for Content</h3>
             <p className="mb-4">
               The contents of our pages have been created with the utmost care. However, we cannot guarantee the 
@@ -68,7 +68,7 @@ const LegalNotice: React.FC = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3 text-accent-500">4. Copyright</h2>
+            <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>4. Copyright</h2>
             <p>
               The content and works created by the site operators on these pages are subject to German copyright law. 
               Duplication, processing, distribution, or any form of commercialization of such material beyond the scope 
@@ -77,7 +77,7 @@ const LegalNotice: React.FC = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3 text-accent-500">5. Data Protection</h2>
+            <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-accent-400' : 'text-accent-600'}`}>5. Data Protection</h2>
             <p>
               Please refer to our Privacy Policy for information on how we collect, process, and use personal data.
             </p>

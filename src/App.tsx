@@ -25,7 +25,6 @@ const TermsAndConditions = lazy(() => import('./pages/public/TermsAndConditions'
 const PrivacyPolicy = lazy(() => import('./pages/public/PrivacyPolicy'));
 const LegalNotice = lazy(() => import('./pages/public/LegalNotice'));
 const Imprint = lazy(() => import('./pages/public/Imprint'));
-const Services = lazy(() => import('./pages/public/Services'));
 const Booking = lazy(() => import('./pages/client/Booking'));
 const BookingSuccess = lazy(() => import('./pages/client/BookingSuccess'));
 
@@ -68,7 +67,6 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/services" element={<Services />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/booking/:serviceId" element={<Booking />} />
             <Route path="/booking/success" element={<BookingSuccess />} />

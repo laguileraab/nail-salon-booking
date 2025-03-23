@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { FiEdit2, FiTrash2, FiPlus, FiX, FiSearch } from 'react-icons/fi';
 
@@ -224,8 +223,8 @@ const AdminStaff = () => {
       }
       
       setShowModal(false);
-    } catch (error: any) {
-      console.error('Error saving staff:', error.message);
+    } catch (error: unknown) {
+      console.error('Error saving staff:', error);
       toast.error(selectedStaff ? 'Failed to update staff member' : 'Failed to add staff member');
     }
   };
@@ -242,8 +241,8 @@ const AdminStaff = () => {
       setStaffMembers(prev => prev.filter(staff => staff.id !== id));
       
       toast.success('Staff member deleted successfully');
-    } catch (error: any) {
-      console.error('Error deleting staff:', error.message);
+    } catch (error: unknown) {
+      console.error('Error deleting staff:', error);
       toast.error('Failed to delete staff member');
     }
   };
@@ -267,8 +266,8 @@ const AdminStaff = () => {
       );
       
       toast.success(`Staff member ${newStatus ? 'activated' : 'deactivated'} successfully`);
-    } catch (error: any) {
-      console.error('Error updating staff status:', error.message);
+    } catch (error: unknown) {
+      console.error('Error updating staff status:', error);
       toast.error('Failed to update staff status');
     }
   };

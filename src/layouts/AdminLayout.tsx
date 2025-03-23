@@ -34,29 +34,28 @@ const AdminLayout = () => {
     { name: 'Settings', to: '/admin/settings', icon: FiSettings },
   ];
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   const isActive = (path: string) => {
+    // Handle index route specially
     if (path === '/admin' && location.pathname === '/admin') {
       return true;
     }
-    if (path !== '/admin' && location.pathname.startsWith(path)) {
-      return true;
-    }
-    return false;
+    // For other routes, check if location.pathname starts with the path
+    return path !== '/admin' && location.pathname.startsWith(path);
   };
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await supabase.auth.signOut();
       navigate('/login');
       toast.success('Signed out successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Error signing out');
+    } catch (error: Error | unknown) {
+      console.error('Error signing out:', error);
+      toast.error('Error signing out');
     }
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   return (

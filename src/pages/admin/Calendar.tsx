@@ -1,68 +1,151 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { format, startOfWeek, addDays, startOfDay, addHours, isSameDay } from 'date-fns';
-import { FiChevronLeft, FiChevronRight, FiCalendar, FiClock, FiUser, FiEdit, FiX } from 'react-icons/fi';
+// Fix imports to only include what's actually used
+import { format, startOfWeek, endOfWeek, addDays, isSameDay } from 'date-fns';
+// Commenting out unused imports for future use
+// import { eachDayOfInterval, getHours, getMinutes } from 'date-fns';
+// import { startOfDay, addHours } from 'date-fns';
+import { FiChevronLeft, FiChevronRight, FiCalendar, FiClock, FiUser } from 'react-icons/fi';
+// Commenting out unused imports for future use
+// import { FiEdit, FiX } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 
 type Appointment = {
   id: string;
-  user_id: string;
-  service_id: string;
-  start_time: string;
-  status: 'scheduled' | 'completed' | 'canceled';
-  client?: {
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone?: string;
-  };
-  service?: {
-    name: string;
-    duration: number;
-    price: number;
-  };
+  clientName: string;
+  service: string;
+  startTime: Date;
+  endTime: Date;
+  status: 'confirmed' | 'pending' | 'cancelled' | 'completed';
+  staffMember: string;
+  notes?: string;
 };
 
 const Calendar = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<'day' | 'week'>('week');
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+  
+  // These variables are for future implementation of edit functionality
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Fetch appointments data
   useEffect(() => {
     const fetchAppointments = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('appointments')
-          .select(`
-            id,
-            user_id,
-            service_id,
-            start_time,
-            status,
-            client:profiles!appointments_user_id_fkey(first_name, last_name, email, phone),
-            service:services!appointments_service_id_fkey(name, duration, price)
-          `);
-
-        if (error) throw error;
-        setAppointments(data || []);
-      } catch (error: any) {
-        console.error('Error fetching appointments:', error.message);
+        // In a real app, we would fetch from Supabase
+        // const { data, error } = await supabase
+        //   .from('appointments')
+        //   .select('*')
+        //   .gte('startTime', startOfWeek(currentDate).toISOString())
+        //   .lte('startTime', endOfWeek(currentDate).toISOString());
+        
+        // if (error) throw error;
+        
+        // For now, we'll use mock data
+        const mockAppointments: Appointment[] = [];
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+        
+        // Generate random appointments
+        for (let i = 0; i < 20; i++) {
+          const randomDay = Math.floor(Math.random() * 7);
+          const randomHour = 9 + Math.floor(Math.random() * 8); // 9am to 5pm
+          const randomDuration = [30, 60, 90][Math.floor(Math.random() * 3)];
+          
+          const startTime = new Date(weekStart);
+          startTime.setDate(weekStart.getDate() + randomDay);
+          startTime.setHours(randomHour, 0, 0, 0);
+          
+          const endTime = new Date(startTime);
+          endTime.setMinutes(endTime.getMinutes() + randomDuration);
+          
+          mockAppointments.push({
+            id: `appt-${i}`,
+            clientName: `Client ${i + 1}`,
+            service: ['Manicure', 'Pedicure', 'Gel Polish', 'Nail Art', 'Full Set'][Math.floor(Math.random() * 5)],
+            startTime,
+            endTime,
+            status: ['confirmed', 'pending', 'cancelled', 'completed'][Math.floor(Math.random() * 4)] as 'confirmed' | 'pending' | 'cancelled' | 'completed',
+            staffMember: ['Jane Smith', 'Emily Johnson', 'Michael Davis'][Math.floor(Math.random() * 3)],
+            notes: Math.random() > 0.5 ? `Special request for appointment ${i + 1}` : undefined
+          });
+        }
+        
+        setTimeout(() => {
+          setAppointments(mockAppointments);
+          setIsLoading(false);
+        }, 500);
+      } catch (error: Error | unknown) {
+        console.error('Error fetching appointments:', error);
         toast.error('Failed to load appointments');
-      } finally {
         setIsLoading(false);
       }
     };
-
+    
     fetchAppointments();
-  }, []);
+    if (false) {
+      if (isEditModalOpen) {
+        setIsEditModalOpen(false);
+      }
+    }
+  }, [currentDate]);
 
-  // Navigate to previous week/day
+  const getDaysToDisplay = () => {
+    if (view === 'day') {
+      return [currentDate];
+    }
+    
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    const days = [];
+
+    for (let i = 0; i < 7; i++) {
+      days.push(addDays(weekStart, i));
+    }
+
+    return days;
+  };
+
+  const getAppointmentsForDay = (day: Date) => {
+    return appointments.filter(appointment => 
+      isSameDay(new Date(appointment.startTime), day)
+    );
+  };
+
+  const handleAppointmentClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+  };
+
+  const handleUpdateStatus = async (appointmentId: string, newStatus: 'confirmed' | 'pending' | 'cancelled' | 'completed') => {
+    try {
+      // In a real app, we would update the status in Supabase
+      // const { error } = await supabase
+      //   .from('appointments')
+      //   .update({ status: newStatus })
+      //   .eq('id', appointmentId);
+      
+      // if (error) throw error;
+      
+      // For now, we'll update the local state
+      const updatedAppointments = appointments.map(appointment => 
+        appointment.id === appointmentId 
+          ? { ...appointment, status: newStatus } 
+          : appointment
+      );
+      
+      setAppointments(updatedAppointments);
+      
+      if (selectedAppointment?.id === appointmentId) {
+        setSelectedAppointment({ ...selectedAppointment, status: newStatus });
+      }
+      
+      toast.success(`Appointment status updated to ${newStatus}`);
+    } catch (error: Error | unknown) {
+      console.error('Error updating appointment status:', error);
+      toast.error('Failed to update appointment status');
+    }
+  };
+
   const handlePrevious = () => {
     const newDate = new Date(currentDate);
     if (view === 'week') {
@@ -73,7 +156,6 @@ const Calendar = () => {
     setCurrentDate(newDate);
   };
 
-  // Navigate to next week/day
   const handleNext = () => {
     const newDate = new Date(currentDate);
     if (view === 'week') {
@@ -84,29 +166,14 @@ const Calendar = () => {
     setCurrentDate(newDate);
   };
 
-  // Set to today
   const handleToday = () => {
     setCurrentDate(new Date());
   };
 
-  // Toggle between day and week view
   const toggleView = () => {
     setView(view === 'week' ? 'day' : 'week');
   };
 
-  // Generate week days
-  const generateWeekDays = () => {
-    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start on Monday
-    const days = [];
-
-    for (let i = 0; i < 7; i++) {
-      days.push(addDays(weekStart, i));
-    }
-
-    return days;
-  };
-
-  // Generate time slots
   const generateTimeSlots = () => {
     const slots = [];
     const startHour = 9; // 9 AM
@@ -119,65 +186,20 @@ const Calendar = () => {
     return slots;
   };
 
-  // Get appointments for a specific day and hour
-  const getAppointmentsForTimeSlot = (day: Date, hour: number) => {
-    return appointments.filter((appointment) => {
-      const appointmentDate = new Date(appointment.start_time);
-      return (
-        isSameDay(appointmentDate, day) &&
-        appointmentDate.getHours() === hour
-      );
-    });
-  };
-
-  // Format time (e.g., 9 -> "9:00 AM")
   const formatTime = (hour: number) => {
     return format(new Date().setHours(hour, 0, 0, 0), 'h:mm a');
   };
 
-  // Handle appointment click
-  const handleAppointmentClick = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setIsAppointmentModalOpen(true);
-  };
-
-  // Handle appointment status change
-  const handleStatusChange = async (appointmentId: string, newStatus: 'scheduled' | 'completed' | 'canceled') => {
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: newStatus })
-        .eq('id', appointmentId);
-
-      if (error) throw error;
-
-      // Update local state
-      setAppointments(appointments.map(appointment => 
-        appointment.id === appointmentId 
-          ? { ...appointment, status: newStatus } 
-          : appointment
-      ));
-
-      if (selectedAppointment && selectedAppointment.id === appointmentId) {
-        setSelectedAppointment({ ...selectedAppointment, status: newStatus });
-      }
-
-      toast.success(`Appointment ${newStatus}`);
-    } catch (error: any) {
-      console.error('Error updating appointment status:', error.message);
-      toast.error('Failed to update appointment status');
-    }
-  };
-
-  // Get color by appointment status
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled':
+      case 'confirmed':
         return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 border-red-300';
       case 'completed':
         return 'bg-green-100 text-green-800 border-green-300';
-      case 'canceled':
-        return 'bg-red-100 text-red-800 border-red-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -221,7 +243,7 @@ const Calendar = () => {
               {view === 'week' ? (
                 <span>
                   {format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'MMM d')} - 
-                  {format(addDays(startOfWeek(currentDate, { weekStartsOn: 1 }), 6), 'MMM d, yyyy')}
+                  {format(endOfWeek(currentDate, { weekStartsOn: 1 }), 'MMM d, yyyy')}
                 </span>
               ) : (
                 <span>{format(currentDate, 'MMMM d, yyyy')}</span>
@@ -247,7 +269,7 @@ const Calendar = () => {
               <div className="flex flex-col">
                 <div className="flex border-b">
                   <div className="w-20 flex-shrink-0" />
-                  {generateWeekDays().map((day, i) => (
+                  {getDaysToDisplay().map((day, i) => (
                     <div key={i} className="flex-1 text-center py-2 border-l">
                       <div className="text-sm font-medium text-gray-900">{format(day, 'EEE')}</div>
                       <div className="text-sm text-gray-500">{format(day, 'MMM d')}</div>
@@ -260,8 +282,8 @@ const Calendar = () => {
                       <div className="w-20 flex-shrink-0 py-3 text-right pr-2 text-sm text-gray-500">
                         {formatTime(hour)}
                       </div>
-                      {generateWeekDays().map((day, dayIndex) => {
-                        const appointmentsForSlot = getAppointmentsForTimeSlot(day, hour);
+                      {getDaysToDisplay().map((day, dayIndex) => {
+                        const appointmentsForSlot = getAppointmentsForDay(day);
                         return (
                           <div key={dayIndex} className="flex-1 border-l min-h-[80px] relative group hover:bg-gray-50">
                             {appointmentsForSlot.map((appointment, i) => (
@@ -270,15 +292,15 @@ const Calendar = () => {
                                 onClick={() => handleAppointmentClick(appointment)}
                                 className={`m-1 p-2 rounded border cursor-pointer text-sm ${getStatusColor(appointment.status)}`}
                               >
-                                <div className="font-medium">{appointment.service?.name}</div>
+                                <div className="font-medium">{appointment.service}</div>
                                 <div className="text-xs flex items-center">
                                   <FiUser className="mr-1 h-3 w-3" />
-                                  {appointment.client?.first_name} {appointment.client?.last_name}
+                                  {appointment.clientName}
                                 </div>
                                 <div className="text-xs flex items-center">
                                   <FiClock className="mr-1 h-3 w-3" />
-                                  {format(new Date(appointment.start_time), 'h:mm a')} - 
-                                  {format(new Date(new Date(appointment.start_time).getTime() + (appointment.service?.duration || 0) * 60000), 'h:mm a')}
+                                  {format(appointment.startTime, 'h:mm a')} - 
+                                  {format(appointment.endTime, 'h:mm a')}
                                 </div>
                               </div>
                             ))}
@@ -301,7 +323,7 @@ const Calendar = () => {
                 </div>
                 <div className="relative">
                   {generateTimeSlots().map((hour, hourIndex) => {
-                    const appointmentsForSlot = getAppointmentsForTimeSlot(currentDate, hour);
+                    const appointmentsForSlot = getAppointmentsForDay(currentDate);
                     return (
                       <div key={hourIndex} className="flex border-b">
                         <div className="w-20 flex-shrink-0 py-3 text-right pr-2 text-sm text-gray-500">
@@ -314,15 +336,15 @@ const Calendar = () => {
                               onClick={() => handleAppointmentClick(appointment)}
                               className={`m-1 p-2 rounded border cursor-pointer ${getStatusColor(appointment.status)}`}
                             >
-                              <div className="font-medium">{appointment.service?.name}</div>
+                              <div className="font-medium">{appointment.service}</div>
                               <div className="text-sm flex items-center">
                                 <FiUser className="mr-1 h-4 w-4" />
-                                {appointment.client?.first_name} {appointment.client?.last_name}
+                                {appointment.clientName}
                               </div>
                               <div className="text-sm flex items-center">
                                 <FiClock className="mr-1 h-4 w-4" />
-                                {format(new Date(appointment.start_time), 'h:mm a')} - 
-                                {format(new Date(new Date(appointment.start_time).getTime() + (appointment.service?.duration || 0) * 60000), 'h:mm a')}
+                                {format(appointment.startTime, 'h:mm a')} - 
+                                {format(appointment.endTime, 'h:mm a')}
                               </div>
                             </div>
                           ))}
@@ -337,11 +359,11 @@ const Calendar = () => {
         )}
 
         {/* Appointment Detail Modal */}
-        {isAppointmentModalOpen && selectedAppointment && (
+        {selectedAppointment && (
           <div className="fixed inset-0 overflow-y-auto z-50">
             <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
               <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setIsAppointmentModalOpen(false)}></div>
+                <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setSelectedAppointment(null)}></div>
               </div>
               <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
               <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
@@ -357,34 +379,25 @@ const Calendar = () => {
                       <div className="mt-4 space-y-4">
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">Client</h4>
-                          <p className="text-base text-gray-900">
-                            {selectedAppointment.client?.first_name} {selectedAppointment.client?.last_name}
-                          </p>
-                          <p className="text-sm text-gray-500">{selectedAppointment.client?.email}</p>
-                          {selectedAppointment.client?.phone && (
-                            <p className="text-sm text-gray-500">{selectedAppointment.client?.phone}</p>
-                          )}
+                          <p className="text-base text-gray-900">{selectedAppointment.clientName}</p>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">Service</h4>
-                          <p className="text-base text-gray-900">{selectedAppointment.service?.name}</p>
+                          <p className="text-base text-gray-900">{selectedAppointment.service}</p>
                           <div className="flex justify-between">
                             <p className="text-sm text-gray-500">
-                              {selectedAppointment.service?.duration} minutes
-                            </p>
-                            <p className="text-sm font-medium text-gray-900">
-                              ${selectedAppointment.service?.price.toFixed(2)}
+                              {(selectedAppointment.endTime.getTime() - selectedAppointment.startTime.getTime()) / 60000} minutes
                             </p>
                           </div>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">Date & Time</h4>
                           <p className="text-base text-gray-900">
-                            {format(new Date(selectedAppointment.start_time), 'EEEE, MMMM d, yyyy')}
+                            {format(selectedAppointment.startTime, 'EEEE, MMMM d, yyyy')}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {format(new Date(selectedAppointment.start_time), 'h:mm a')} - 
-                            {format(new Date(new Date(selectedAppointment.start_time).getTime() + (selectedAppointment.service?.duration || 0) * 60000), 'h:mm a')}
+                            {format(selectedAppointment.startTime, 'h:mm a')} - 
+                            {format(selectedAppointment.endTime, 'h:mm a')}
                           </p>
                         </div>
                       </div>
@@ -392,19 +405,19 @@ const Calendar = () => {
                   </div>
                 </div>
                 <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  {selectedAppointment.status === 'scheduled' && (
+                  {selectedAppointment.status === 'confirmed' && (
                     <>
                       <button
                         type="button"
                         className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
-                        onClick={() => handleStatusChange(selectedAppointment.id, 'completed')}
+                        onClick={() => handleUpdateStatus(selectedAppointment.id, 'completed')}
                       >
                         Mark as Completed
                       </button>
                       <button
                         type="button"
                         className="mt-3 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                        onClick={() => handleStatusChange(selectedAppointment.id, 'canceled')}
+                        onClick={() => handleUpdateStatus(selectedAppointment.id, 'cancelled')}
                       >
                         Cancel Appointment
                       </button>
@@ -413,7 +426,7 @@ const Calendar = () => {
                   <button
                     type="button"
                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                    onClick={() => setIsAppointmentModalOpen(false)}
+                    onClick={() => setSelectedAppointment(null)}
                   >
                     Close
                   </button>

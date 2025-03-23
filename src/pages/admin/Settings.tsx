@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+// Import is preserved but commented for future implementation with real database
+// import { supabase } from '../../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { FiSave, FiRefreshCw, FiClock, FiMail, FiPhone, FiMapPin, FiDollarSign } from 'react-icons/fi';
 
+// Settings interfaces
 interface BusinessSettings {
   name: string;
   email: string;
@@ -53,25 +55,12 @@ const AdminSettings = () => {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      // In a real app, we would fetch this from Supabase
-      // For now, we'll use the default values
-      
-      /*
-      const { data, error } = await supabase
-        .from('business_settings')
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      if (data) setSettings(data);
-      */
-      
       // Simulate loading delay
       setTimeout(() => {
         setIsLoading(false);
       }, 600);
-    } catch (error: any) {
-      console.error('Error fetching settings:', error.message);
+    } catch (error: Error | unknown) {
+      console.error('Error fetching settings:', error);
       toast.error('Failed to load settings');
       setIsLoading(false);
     }
@@ -80,21 +69,12 @@ const AdminSettings = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // In a real app, we would save to Supabase
-      /*
-      const { error } = await supabase
-        .from('business_settings')
-        .upsert(settings);
-      
-      if (error) throw error;
-      */
-      
       // Simulate saving delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
       toast.success('Settings saved successfully');
-    } catch (error: any) {
-      console.error('Error saving settings:', error.message);
+    } catch (error: Error | unknown) {
+      console.error('Error saving settings:', error);
       toast.error('Failed to save settings');
     } finally {
       setIsSaving(false);
@@ -105,7 +85,7 @@ const AdminSettings = () => {
     const { name, value } = e.target;
     setSettings(prev => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'taxRate' ? parseFloat(value) : value,
     }));
   };
 

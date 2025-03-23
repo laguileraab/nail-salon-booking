@@ -11,8 +11,6 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
-    "@tailwindcss/postcss": "^4.0.15",
-    "@tailwindcss/vite": "^4.0.15",
     "chart.js": "^4.4.8",
     "date-fns": "^4.1.0",
     "postcss": "^8.5.3",

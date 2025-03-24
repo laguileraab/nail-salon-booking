@@ -170,9 +170,9 @@ const RegisterPage = () => {
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
                 I agree to the{' '}
-                <a href="#" className="font-medium text-accent-600 hover:text-accent-500">
+                <Link to="/terms" className="font-medium text-accent-600 hover:text-accent-500">
                   Terms and Conditions
-                </a>
+                </Link>
               </label>
             </div>
 

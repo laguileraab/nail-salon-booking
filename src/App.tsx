@@ -29,6 +29,9 @@ const NailDesigns = lazy(() => import('./pages/public/NailDesigns'));
 const Booking = lazy(() => import('./pages/client/Booking'));
 const BookingSuccess = lazy(() => import('./pages/client/BookingSuccess'));
 
+// Utility pages
+const MakeAdmin = lazy(() => import('./pages/utils/MakeAdmin'));
+
 // Client pages
 const ClientDashboard = lazy(() => import('./pages/client/Dashboard'));
 const ClientBookings = lazy(() => import('./pages/client/Bookings'));
@@ -78,6 +81,7 @@ function App() {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/legal" element={<LegalNotice />} />
             <Route path="/imprint" element={<Imprint />} />
+            <Route path="/admin-utility" element={<MakeAdmin />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
           

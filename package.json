@@ -9,7 +9,7 @@
     "build:strict": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "set-admin": "node scripts/set-admin-role.js",
+    "make-admin": "node -e \"const userEmail=process.argv[2]; const url=process.env.VITE_SUPABASE_URL; const key=process.env.VITE_SUPABASE_ANON_KEY; if(!userEmail) { console.error('Usage: npm run make-admin your@email.com'); process.exit(1); } import('./scripts/set-admin-role.js').then(module => module.default(userEmail, url, key));\"",
     "migrate": "supabase migration up"
   },
   "dependencies": {
@@ -17,6 +17,7 @@
     "@supabase/supabase-js": "^2.49.1",
     "chart.js": "^4.4.8",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.4.7",
     "postcss": "^8.5.3",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.3.0",

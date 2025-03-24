@@ -1,19 +1,7 @@
-import { useState, useEffect, useCallback, ReactNode, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
-import { Profile, AuthContextType } from '../types/auth.types';
-
-// Create the context
-export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
-
-// Custom hook for accessing auth context
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+import { Profile } from '../types/auth.types';
+import { AuthContext, typedSupabase } from './AuthContextCore';
 
 type AuthProviderProps = {
   children: ReactNode;
@@ -26,27 +14,66 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Memoize fetchProfile function to avoid recreating it on each render
   const fetchProfile = useCallback(async (userId: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await typedSupabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
       if (error) {
-        throw error;
+        // Check if the error is "No rows found"
+        if (error.message && error.message.includes('No rows found')) {
+          console.log('No profile found, creating default profile');
+          
+          // Get user email from auth
+          const { data: userData } = await typedSupabase.auth.getUser();
+          const userEmail = userData?.user?.email || '';
+          
+          // Create a default profile for the user
+          const { data: newProfile, error: insertError } = await typedSupabase
+            .from('profiles')
+            .insert([
+              {
+                id: userId,
+                email: userEmail,
+                first_name: 'User',
+                last_name: 'Name',
+                role: 'client' // Default role
+              }
+            ])
+            .select()
+            .single();
+            
+          if (insertError) {
+            throw insertError;
+          }
+          
+          if (newProfile) {
+            // Type assertion to ensure correct profile type
+            setProfile(newProfile as unknown as Profile);
+            setIsAdmin(newProfile.role === 'admin');
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          throw error;
+        }
       } else if (data) {
-        setProfile(data);
+        // Type assertion to ensure correct profile type
+        setProfile(data as unknown as Profile);
         setIsAdmin(data.role === 'admin');
       }
     } catch (error: unknown) {
       handleError(error);
+      // Important: Still set isLoading to false even if there's an error
+      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
@@ -54,14 +81,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const handleError = (error: unknown): void => {
     console.error('Authentication error:', error);
-    setError(error instanceof Error ? error.message : 'An unknown error occurred');
-    setLoading(false);
+    setAuthError(error instanceof Error ? error.message : 'An unknown error occurred');
   };
 
   useEffect(() => {
     // Get the initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await typedSupabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -75,7 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     getInitialSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = typedSupabase.auth.onAuthStateChange(
       async (_, session) => {
         setSession(session);
         setUser(session?.user ?? null);
@@ -94,12 +120,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [fetchProfile]);
 
   const signIn = async (email: string, password: string): Promise<{ error: AuthError | Error | null }> => {
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await typedSupabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      setLoading(false);
       return { error: null };
     } catch (error: unknown) {
       handleError(error);
+      setLoading(false);
       return { error: error instanceof Error ? error : new Error('Unknown error during sign in') };
     }
   };
@@ -110,14 +139,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     firstName: string,
     lastName: string
   ): Promise<{ error: AuthError | Error | null }> => {
+    setLoading(true);
     try {
       // Create auth user
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await typedSupabase.auth.signUp({ email, password });
       if (error) throw error;
 
       if (data.user) {
         // Create profile
-        const { error: profileError } = await supabase.from('profiles').insert([
+        const { error: profileError } = await typedSupabase.from('profiles').insert([
           {
             id: data.user.id,
             email,
@@ -130,41 +160,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (profileError) throw profileError;
       }
 
+      setLoading(false);
       return { error: null };
     } catch (error: unknown) {
       handleError(error);
+      setLoading(false);
       return { error: error instanceof Error ? error : new Error('Unknown error during sign up') };
     }
   };
 
   const signOut = async (): Promise<void> => {
+    setLoading(true);
     try {
-      await supabase.auth.signOut();
+      await typedSupabase.auth.signOut();
+      setLoading(false);
     } catch (error: unknown) {
       handleError(error);
+      setLoading(false);
     }
   };
 
   const resetPassword = async (email: string): Promise<{ error: AuthError | Error | null }> => {
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await typedSupabase.auth.resetPasswordForEmail(email);
       if (error) throw error;
+      setLoading(false);
       return { error: null };
     } catch (error: unknown) {
       handleError(error);
+      setLoading(false);
       return { error: error instanceof Error ? error : new Error('Unknown error during password reset') };
     }
   };
 
   // Update user profile
   const updateProfile = async (updates: Partial<Profile>): Promise<{ error: AuthError | Error | null }> => {
+    setLoading(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
+      const { data: userData } = await typedSupabase.auth.getUser();
+      if (!userData?.user) {
         throw new Error('No authenticated user found');
       }
 
-      const { error } = await supabase
+      const { error } = await typedSupabase
         .from('profiles')
         .update(updates)
         .eq('id', userData.user.id);
@@ -176,26 +215,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setProfile(prev => prev ? { ...prev, ...updates } : null);
       }
 
+      setLoading(false);
       return { error: null };
     } catch (error: unknown) {
       handleError(error);
+      setLoading(false);
       return { error: error instanceof Error ? error : new Error('Unknown error updating profile') };
     }
   };
 
-  const value: AuthContextType = {
+  const value = {
     session,
     user,
     profile,
     isLoading,
     isAdmin,
+    loading: loading, // Ensure the loading property is properly passed to the context value object
     signIn,
     signUp,
     signOut,
     resetPassword,
     updateProfile,
-    error,
-    loading
+    authError
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,5 +1,2 @@
-import { useAuth as originalUseAuth } from '../contexts/AuthContext';
-
-export function useAuth() {
-  return originalUseAuth();
-}
+// Re-export the useAuth hook from AuthContextCore for convenience
+export { useAuth } from '../contexts/AuthContextCore';

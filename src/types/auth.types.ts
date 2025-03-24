@@ -15,6 +15,6 @@ export interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | Error | null }>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: AuthError | Error | null }>;
-  error: string | null;
+  authError: string | null;
   loading: boolean;
 }

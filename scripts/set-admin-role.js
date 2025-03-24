@@ -1,37 +1,45 @@
 /**
  * Script to set a user's role to admin
- * Usage: node set-admin-role.js <USER_EMAIL>
+ * Can be used directly: node scripts/set-admin-role.js <USER_EMAIL> <SUPABASE_URL> <SUPABASE_ANON_KEY>
+ * Or via npm: npm run make-admin your@email.com
  * 
  * This script is intended to be used to bootstrap the first admin user
  * before the admin UI for user management is accessible.
  */
 
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+import { createClient } from '@supabase/supabase-js';
 
-// Validate environment variables
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-  console.error('Error: Missing environment variables. Please set SUPABASE_URL and SUPABASE_SERVICE_KEY');
-  process.exit(1);
-}
+// Main function that can be called directly or imported and used
+export default async function setAdminRole(userEmail, supabaseUrl, supabaseKey) {
+  // Validate arguments - when being called from command line
+  if (!userEmail) {
+    console.error('Error: User email is required');
+    console.error('Usage: node scripts/set-admin-role.js <USER_EMAIL> <SUPABASE_URL> <SUPABASE_ANON_KEY>');
+    return;
+  }
 
-// Get email argument
-const userEmail = process.argv[2];
-if (!userEmail) {
-  console.error('Error: Email argument is required');
-  console.error('Usage: node set-admin-role.js <USER_EMAIL>');
-  process.exit(1);
-}
+  // If called directly from command line, use arguments
+  if (!supabaseUrl && process.argv.length > 3) {
+    supabaseUrl = process.argv[3];
+  }
+  
+  if (!supabaseKey && process.argv.length > 4) {
+    supabaseKey = process.argv[4];
+  }
 
-// Initialize Supabase client with service role key
-// Note: The service role key bypasses RLS and should be kept secure
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Error: Supabase URL and key are required');
+    console.error('Usage: node scripts/set-admin-role.js <USER_EMAIL> <SUPABASE_URL> <SUPABASE_ANON_KEY>');
+    return;
+  }
 
-async function setAdminRole() {
+  // Initialize Supabase client
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   try {
+    console.log(`Setting admin role for user: ${userEmail}`);
+    console.log(`Using Supabase URL: ${supabaseUrl}`);
+    
     // First, get the user ID from the email
     const { data: userData, error: userError } = await supabase
       .from('profiles')
@@ -49,23 +57,28 @@ async function setAdminRole() {
       return;
     }
 
-    console.log(`Found user: ${userData.email} (Current role: ${userData.role})`);
+    console.log(`Found user: ${userData.email} (${userData.id})`);
+    console.log(`Current role: ${userData.role || 'none'}`);
 
-    // Update the user's role to admin
-    const { data, error } = await supabase
+    // Update user to admin role
+    const { error: updateError } = await supabase
       .from('profiles')
       .update({ role: 'admin' })
       .eq('id', userData.id);
 
-    if (error) {
-      console.error('Error updating user role:', error.message);
+    if (updateError) {
+      console.error('Error updating user role:', updateError.message);
       return;
     }
 
-    console.log(`Successfully set ${userEmail} as admin`);
+    console.log(`Successfully set ${userEmail} as admin!`);
   } catch (error) {
-    console.error('Unexpected error:', error.message);
+    console.error('Unexpected error:', error instanceof Error ? error.message : String(error));
   }
 }
 
-setAdminRole();
+// If script is run directly (not imported), execute the function with command line args
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const userEmail = process.argv[2];
+  setAdminRole(userEmail);
+}

@@ -11,8 +11,9 @@ import BookingConfirmation from './BookingConfirmation';
 import { emailService } from '../../services/emailService';
 import { bookingService } from '../../services/bookingService';
 import { calendarService } from '../../services/calendarService';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { Language } from '../../types/language.types';
+import { format } from 'date-fns';
 
 type BookingStep = 'service' | 'datetime' | 'info' | 'confirmation';
 
@@ -282,23 +283,26 @@ const BookingForm = ({ preselectedServiceId }: BookingFormProps) => {
     setSubmitting(true);
     
     try {
-      // Format the date and time for the appointment
-      const appointmentDate = bookingData.date.toISOString().split('T')[0];
-      const appointmentTime = `${bookingData.timeSlot.hour.toString().padStart(2, '0')}:${bookingData.timeSlot.minute.toString().padStart(2, '0')}`;
-      
+      // Format date and time for the API
+      const appointmentDate = bookingData.date ? format(bookingData.date, 'yyyy-MM-dd') : '';
+      const appointmentTime = `${bookingData.timeSlot?.hour.toString().padStart(2, '0')}:${bookingData.timeSlot?.minute.toString().padStart(2, '0')}`;
+
       let bookingId: string = '';
 
       // Use the appropriate booking function based on user authentication status
       if (user) {
         // User is logged in, create a user booking
         const booking = await bookingService.createUserBooking({
-          userId: user.id,
-          serviceId: bookingData.service.id,
-          appointmentDate,
-          appointmentTime,
-          staffId: bookingData.timeSlot.staffId,
+          firstName: bookingData.firstName,
+          lastName: bookingData.lastName,
+          email: bookingData.email,
+          phone: bookingData.phone || '',
+          serviceId: bookingData.service?.id || '',
+          date: appointmentDate,
+          time: appointmentTime,
+          staffId: bookingData.timeSlot?.staffId || '',
           notes: bookingData.notes || '',
-        });
+        }, user.id);
         bookingId = booking.id || '';
       } else {
         // User is not logged in, create a guest booking
@@ -307,30 +311,35 @@ const BookingForm = ({ preselectedServiceId }: BookingFormProps) => {
           lastName: bookingData.lastName,
           email: bookingData.email,
           phone: bookingData.phone || '',
-          serviceId: bookingData.service.id,
-          appointmentDate,
-          appointmentTime,
-          staffId: bookingData.timeSlot.staffId,
+          serviceId: bookingData.service?.id || '',
+          date: appointmentDate,
+          time: appointmentTime,
+          staffId: bookingData.timeSlot?.staffId || '',
           notes: bookingData.notes || '',
         });
         bookingId = booking.id || '';
       }
 
       // Generate calendar event data for future integration
+      const formattedTime = `${bookingData.timeSlot?.hour.toString().padStart(2, '0')}:${bookingData.timeSlot?.minute.toString().padStart(2, '0')}`;
       const calendarEvent = await calendarService.generateEventData({
-        serviceId: bookingData.service.id,
-        serviceName: bookingData.service.name,
-        date: bookingData.date,
-        startHour: bookingData.timeSlot.hour,
-        startMinute: bookingData.timeSlot.minute,
-        durationMinutes: bookingData.service.durationMinutes,
+        serviceId: bookingData.service?.id || '',
+        serviceName: bookingData.service?.name || '',
+        staffId: bookingData.timeSlot?.staffId || '',
+        staffName: '', // We'd need to get the staff name from a service call
+        date: bookingData.date ? format(bookingData.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+        startTime: formattedTime,
+        endTime: '', // Calculate end time based on duration and start time
+        duration: bookingData.service?.durationMinutes || 0,
+        status: 'confirmed',
         clientName: `${bookingData.firstName} ${bookingData.lastName}`,
         clientEmail: bookingData.email,
         clientPhone: bookingData.phone || '',
         notes: bookingData.notes || '',
         businessName: 'MärchenNails',
-        businessAddress: 'MärchenNails Salon, Munich, Germany',
-        businessPhone: '+49 123 456789',
+        businessAddress: 'Musterstraße 123, 10115 Berlin',
+        businessPhone: '+49 30 12345678',
+        language: 'en'
       });
 
       // TODO: Add calendar attachment to email in future
@@ -340,7 +349,7 @@ const BookingForm = ({ preselectedServiceId }: BookingFormProps) => {
       await emailService.sendBookingConfirmation(
         bookingData.email,
         bookingData.firstName,
-        bookingData.service.name,
+        bookingData.service?.name || '',
         bookingData.date, // We've already validated that this is not null above
         `${bookingData.timeSlot.hour.toString().padStart(2, '0')}:${bookingData.timeSlot.minute.toString().padStart(2, '0')}`,
         language as Language, // Use the user's language preference

@@ -1,7 +1,7 @@
 import { useState, useEffect, ReactNode, useContext } from 'react';
 import { translations, Language } from '../types/language.types';
 import { supabase } from '../lib/supabase';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '../types/database.types';
 import { LanguageContext } from './context-objects/LanguageContext';

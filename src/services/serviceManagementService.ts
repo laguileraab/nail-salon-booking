@@ -1,6 +1,9 @@
 import { supabase } from '../lib/supabase';
 import { NailService, NailServiceFormData } from '../types/NailService';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
+
+// Create a properly typed Supabase client
+const typedSupabase = supabase as ReturnType<typeof createClient>;
 
 // Define the database service type to match the Supabase structure
 interface DatabaseService {
@@ -94,14 +97,16 @@ export const serviceManagementService = {
    */
   async getAllServices(): Promise<NailService[]> {
     try {
-      const { data, error } = await (supabase as SupabaseClient)
+      const { data, error } = await typedSupabase
         .from('services')
         .select('*')
         .order('name');
 
       if (error) throw error;
       
-      return (data as DatabaseService[] || []).map(this.transformDatabaseToService);
+      // First convert to unknown, then to our expected type for safety
+      const typedData = data ? (data as unknown) as DatabaseService[] : [];
+      return typedData.map(service => this.transformDatabaseToService(service));
     } catch (error) {
       console.error('Error fetching services:', error);
       throw error;
@@ -113,7 +118,7 @@ export const serviceManagementService = {
    */
   async getActiveServices(): Promise<NailService[]> {
     try {
-      const { data, error } = await (supabase as SupabaseClient)
+      const { data, error } = await typedSupabase
         .from('services')
         .select('*')
         .eq('is_active', true)
@@ -121,7 +126,9 @@ export const serviceManagementService = {
 
       if (error) throw error;
       
-      return (data as DatabaseService[] || []).map(this.transformDatabaseToService);
+      // First convert to unknown, then to our expected type for safety
+      const typedData = data ? (data as unknown) as DatabaseService[] : [];
+      return typedData.map(service => this.transformDatabaseToService(service));
     } catch (error) {
       console.error('Error fetching active services:', error);
       throw error;
@@ -133,18 +140,18 @@ export const serviceManagementService = {
    */
   async getServiceById(id: string): Promise<NailService | null> {
     try {
-      const { data, error } = await (supabase as SupabaseClient)
+      const { data, error } = await typedSupabase
         .from('services')
         .select('*')
         .eq('id', id)
         .single();
 
       if (error) throw error;
-      if (!data) return null;
       
-      return this.transformDatabaseToService(data as DatabaseService);
+      // First convert to unknown, then to our expected type for safety
+      return data ? this.transformDatabaseToService((data as unknown) as DatabaseService) : null;
     } catch (error) {
-      console.error(`Error fetching service with ID ${id}:`, error);
+      console.error(`Error fetching service with id ${id}:`, error);
       throw error;
     }
   },
@@ -156,16 +163,16 @@ export const serviceManagementService = {
     try {
       const dbService = this.transformServiceToDatabase(service);
       
-      const { data, error } = await (supabase as SupabaseClient)
+      const { data, error } = await typedSupabase
         .from('services')
         .insert([dbService])
         .select()
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error('Failed to create service');
       
-      return this.transformDatabaseToService(data as DatabaseService);
+      // First convert to unknown, then to our expected type for safety
+      return this.transformDatabaseToService((data as unknown) as DatabaseService);
     } catch (error) {
       console.error('Error creating service:', error);
       throw error;
@@ -179,7 +186,7 @@ export const serviceManagementService = {
     try {
       const dbService = this.transformServiceToDatabase(service, id);
       
-      const { data, error } = await (supabase as SupabaseClient)
+      const { data, error } = await typedSupabase
         .from('services')
         .update(dbService)
         .eq('id', id)
@@ -187,11 +194,11 @@ export const serviceManagementService = {
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error(`Failed to update service with ID ${id}`);
       
-      return this.transformDatabaseToService(data as DatabaseService);
+      // First convert to unknown, then to our expected type for safety
+      return this.transformDatabaseToService((data as unknown) as DatabaseService);
     } catch (error) {
-      console.error(`Error updating service with ID ${id}:`, error);
+      console.error(`Error updating service with id ${id}:`, error);
       throw error;
     }
   },
@@ -201,7 +208,7 @@ export const serviceManagementService = {
    */
   async deleteService(id: string): Promise<void> {
     try {
-      const { error } = await (supabase as SupabaseClient)
+      const { error } = await typedSupabase
         .from('services')
         .delete()
         .eq('id', id);

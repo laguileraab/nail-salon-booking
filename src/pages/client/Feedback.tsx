@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'react-hot-toast';
 import { FiStar } from 'react-icons/fi';
 import SEO from '../../components/SEO';
+import { createClient } from '@supabase/supabase-js';
+
+// Create a properly typed Supabase client
+const typedSupabase = supabase as ReturnType<typeof createClient>;
 
 type Appointment = {
   id: string;
@@ -68,7 +72,7 @@ const Feedback = () => {
       setIsLoading(true);
       try {
         // Fetch appointments that are completed and don't have feedback yet
-        const { data: appointmentsData, error: appointmentsError } = await supabase
+        const { data: appointmentsData, error: appointmentsError } = await typedSupabase
           .from('appointments')
           .select(`
             id,
@@ -82,7 +86,7 @@ const Feedback = () => {
         if (appointmentsError) throw appointmentsError;
 
         // Fetch existing feedback to determine which appointments already have feedback
-        const { data: feedbackData, error: feedbackError } = await supabase
+        const { data: feedbackData, error: feedbackError } = await typedSupabase
           .from('feedback')
           .select('appointment_id')
           .eq('user_id', profile.id);
@@ -96,25 +100,32 @@ const Feedback = () => {
 
         // Mark appointments with feedback
         const processedAppointments = appointmentsData?.map((appointment) => {
+          // Handle possible undefined types with type assertion
+          const appointmentData = appointment as unknown as { 
+            id: string; 
+            start_time: string;
+            services: Array<{ name: string }> | { name: string };
+          };
+          
           // Get the first service if it exists
-          const serviceData = Array.isArray(appointment.services) && appointment.services.length > 0 
-            ? appointment.services[0] 
-            : null;
+          const serviceData = Array.isArray(appointmentData.services) && appointmentData.services.length > 0 
+            ? appointmentData.services[0] 
+            : (appointmentData.services as { name: string }) || null;
             
           return {
-            id: appointment.id,
-            start_time: appointment.start_time,
+            id: appointmentData.id,
+            start_time: appointmentData.start_time,
             service: {
               name: serviceData?.name || 'Unknown Service'
             },
-            has_feedback: appointmentsWithFeedback.has(appointment.id)
+            has_feedback: appointmentsWithFeedback.has(appointmentData.id)
           };
         }) || [];
 
         setAppointments(processedAppointments);
 
         // Fetch past feedback
-        const { data: pastFeedbackData, error: pastFeedbackError } = await supabase
+        const { data: pastFeedbackData, error: pastFeedbackError } = await typedSupabase
           .from('feedback')
           .select(`
             id,
@@ -131,16 +142,35 @@ const Feedback = () => {
         // Process the feedback data to match our expected structure
         if (pastFeedbackData) {
           const processedFeedback = pastFeedbackData.map(item => {
+            // Type assertion for safety
+            const feedbackItem = item as unknown as {
+              id: string;
+              rating: number;
+              comment: string;
+              created_at: string;
+              appointments: {
+                services: Array<{ name: string }> | { name: string };
+                start_time: string;
+              } | Array<{
+                services: Array<{ name: string }> | { name: string };
+                start_time: string;
+              }>;
+            };
+            
             // Assuming item.appointments might be an array when it comes from Supabase
-            const appointmentData = Array.isArray(item.appointments) ? item.appointments[0] : item.appointments;
+            const appointmentData = Array.isArray(feedbackItem.appointments) 
+              ? feedbackItem.appointments[0] 
+              : feedbackItem.appointments;
 
             return {
-              id: item.id,
-              rating: item.rating,
-              comment: item.comment,
-              created_at: item.created_at,
+              id: feedbackItem.id,
+              rating: feedbackItem.rating,
+              comment: feedbackItem.comment,
+              created_at: feedbackItem.created_at,
               appointments: {
-                services: Array.isArray(appointmentData.services) ? appointmentData.services : [appointmentData.services],
+                services: Array.isArray(appointmentData.services) 
+                  ? appointmentData.services 
+                  : [appointmentData.services],
                 start_time: appointmentData.start_time
               }
             } as FeedbackItem;
@@ -187,7 +217,7 @@ const Feedback = () => {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('feedback').insert([
+      const { error } = await typedSupabase.from('feedback').insert([
         {
           user_id: profile.id,
           appointment_id: feedbackForm.appointment_id,

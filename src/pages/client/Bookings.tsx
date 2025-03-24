@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { FiCalendar, FiClock, FiDollarSign, FiClock as FiDuration } from 'react-icons/fi';
 import { toast } from 'react-hot-toast';
 import SEO from '../../components/SEO';
+import { createClient } from '@supabase/supabase-js';
+
+// Create a properly typed Supabase client
+const typedSupabase = supabase as ReturnType<typeof createClient>;
 
 type Service = {
   id: string;
@@ -51,21 +55,23 @@ const Bookings = () => {
   const fetchServices = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await typedSupabase
         .from('services')
         .select('*')
         .eq('is_active', true);
       
       if (error) throw error;
       
-      setServices(data || []);
+      // Type assertion to ensure correct typing
+      const typedData = data ? (data as unknown) as Service[] : [];
+      setServices(typedData);
     } catch (error: unknown) {
       console.error('Error fetching services:', error instanceof Error ? error.message : String(error));
       toast.error('Failed to load services');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [setIsLoading, setServices]);
 
   useEffect(() => {
     fetchServices();
@@ -93,7 +99,7 @@ const Bookings = () => {
       const endDate = new Date(`${selectedDate}T23:59:59`);
 
       // Get booked slots from the database
-      const { data: bookedSlots, error } = await supabase
+      const { data: bookedSlots, error } = await typedSupabase
         .from('appointments')
         .select('start_time, services:service_id (duration)')
         .gte('start_time', startDate.toISOString())
@@ -107,7 +113,9 @@ const Bookings = () => {
       
       // Use proper typing for bookedSlots data structure
       if (bookedSlots) {
-        bookedSlots.forEach((booking: BookedSlot) => {
+        // Need to use type assertion to ensure the correct structure
+        const typedBookedSlots = (bookedSlots as unknown) as BookedSlot[];
+        typedBookedSlots.forEach((booking: BookedSlot) => {
           const startTime = new Date(booking.start_time);
           // Assuming services contains the duration directly or needs to be accessed differently
           // Adapt this based on the actual structure from your Supabase query
@@ -166,7 +174,7 @@ const Bookings = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedDate, selectedService]);
+  }, [selectedDate, selectedService, setIsLoading, setAvailableTimeSlots]);
 
   useEffect(() => {
     fetchTimeSlots();
@@ -240,7 +248,7 @@ const Bookings = () => {
       const appointmentDateTime = new Date(`${selectedDate}T${selectedTimeSlot}:00`);
 
       // Create the appointment
-      const { error } = await supabase.from('appointments').insert([
+      const { error } = await typedSupabase.from('appointments').insert([
         {
           user_id: profile.id,
           service_id: selectedService.id,

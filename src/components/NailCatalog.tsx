@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { fetchNailDesigns } from '../services/nailDesignService';
 
 export interface NailDesign {
   id: string;
   name: string;
   description: string;
   imageUrl: string;
+  fallbackImageUrl?: string;
   price: number;
   category: string;
   popular: boolean;
@@ -80,94 +82,23 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
                              language === 'es' ? translations.es : 
                              translations.en;
 
-  // Use useCallback to memoize the fetchDesigns function to prevent unnecessary re-renders
-  const fetchDesigns = useCallback(async () => {
+  // Use useCallback to memoize the loadDesigns function to prevent unnecessary re-renders
+  const loadDesigns = useCallback(async () => {
     setIsLoading(true);
     try {
-      // This would normally be a call to your backend or Supabase
-      // For now, we'll use sample data
-      setTimeout(() => {
-        const sampleDesigns: NailDesign[] = [
-          {
-            id: '1',
-            name: 'Classic French Manicure',
-            description: 'Timeless and elegant french tips that suit any occasion.',
-            imageUrl: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=400&auto=format&fit=crop&q=80',
-            price: 35,
-            category: 'manicure',
-            popular: true
-          },
-          {
-            id: '2',
-            name: 'Gel Polish Full Color',
-            description: 'Long-lasting gel polish in the color of your choice.',
-            imageUrl: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=400&auto=format&fit=crop&q=80',
-            price: 40,
-            category: 'gelPolish',
-            popular: true
-          },
-          {
-            id: '3',
-            name: 'Acrylic Extensions',
-            description: 'Full set of acrylic extensions for added length and strength.',
-            imageUrl: 'https://images.unsplash.com/photo-1604902396830-aca29e19b2b3?w=400&auto=format&fit=crop&q=80',
-            price: 55,
-            category: 'acrylicExtensions',
-            popular: false
-          },
-          {
-            id: '4',
-            name: 'Nail Art Design',
-            description: 'Custom nail art designs created by our skilled technicians.',
-            imageUrl: 'https://images.unsplash.com/photo-1607779097040-28d8a56e32b0?w=400&auto=format&fit=crop&q=80',
-            price: 45,
-            category: 'nailArt',
-            popular: true
-          },
-          {
-            id: '5',
-            name: 'Spa Pedicure',
-            description: 'Relaxing pedicure with exfoliation, massage, and polish.',
-            imageUrl: 'https://images.unsplash.com/photo-1582291652525-cde3dbd88162?w=400&auto=format&fit=crop&q=80',
-            price: 50,
-            category: 'pedicure',
-            popular: true
-          },
-          {
-            id: '6',
-            name: 'Marble Nail Art',
-            description: 'Elegant marble effect created with specialized techniques.',
-            imageUrl: 'https://images.unsplash.com/photo-1604902396830-aca29e19b2b3?w=400&auto=format&fit=crop&q=80',
-            price: 60,
-            category: 'nailArt',
-            popular: false
-          },
-        ];
-
-        let filteredDesigns = sampleDesigns;
-        
-        // Filter by category if specified
-        if (category && category !== 'all') {
-          filteredDesigns = sampleDesigns.filter(design => design.category === category);
-        }
-        
-        // Apply limit if specified
-        if (limit && limit > 0) {
-          filteredDesigns = filteredDesigns.slice(0, limit);
-        }
-
-        setDesigns(filteredDesigns);
-        setIsLoading(false);
-      }, 500); // Reduced loading delay
-    } catch (error: unknown) {
-      console.error('Error fetching nail designs:', error instanceof Error ? error.message : String(error));
+      // Fetch designs from the database via our service
+      const fetchedDesigns = await fetchNailDesigns(category, limit, language);
+      setDesigns(fetchedDesigns);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error loading nail designs:', error);
       setIsLoading(false);
     }
-  }, [category, limit]);
+  }, [category, limit, language]);
 
   useEffect(() => {
-    fetchDesigns();
-  }, [fetchDesigns]);
+    loadDesigns();
+  }, [loadDesigns]);
 
   // Handle scroll performance
   useEffect(() => {
@@ -237,13 +168,19 @@ const NailCatalog = ({ limit, showAllLink = true, category }: NailCatalogProps) 
                       transform: 'translate3d(0, 0, 0)',
                       backfaceVisibility: 'hidden' 
                     }}
+                    onError={(e) => {
+                      if (design.fallbackImageUrl) {
+                        const target = e.target as HTMLImageElement;
+                        target.src = design.fallbackImageUrl;
+                      }
+                    }}
                   />
                 </div>
                 <div className="p-6">
                   <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{design.name}</h3>
                   <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>{design.description}</p>
                   <div className="mt-4 flex justify-between items-center">
-                    <p className="text-accent-600 font-bold">${design.price}</p>
+                    <p className="text-accent-600 font-bold">€{design.price.toFixed(2)}</p>
                     <Link 
                       to="/booking" 
                       className={`text-sm font-medium px-4 py-2 rounded ${theme === 'dark' ? 'bg-accent-500 text-white hover:bg-accent-600' : 'bg-accent-100 text-accent-700 hover:bg-accent-200'}`}

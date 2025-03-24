@@ -2,8 +2,8 @@
 export type Language = 'en' | 'de' | 'es';
 
 export type LanguageContextType = {
-  language: string;
-  setLanguage: (language: string) => void;
+  language: Language;
+  setLanguage: (language: Language) => void;
   translations: Record<string, Record<string, string>>;
 };
 

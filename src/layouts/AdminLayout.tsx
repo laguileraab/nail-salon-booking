@@ -26,6 +26,7 @@ const AdminLayout: React.FC = () => {
     { name: 'Dashboard', path: '/admin', icon: <FiHome className="mr-3 h-5 w-5" /> },
     { name: 'Calendar', path: '/admin/calendar', icon: <FiCalendar className="mr-3 h-5 w-5" /> },
     { name: 'Clients', path: '/admin/clients', icon: <FiUsers className="mr-3 h-5 w-5" /> },
+    { name: 'Manage Users', path: '/admin/manage-users', icon: <FiUserPlus className="mr-3 h-5 w-5" /> },
     { name: 'Staff', path: '/admin/staff', icon: <FiUserPlus className="mr-3 h-5 w-5" /> },
     { name: 'Services', path: '/admin/services', icon: <FiScissors className="mr-3 h-5 w-5" /> },
     { name: 'Promotions', path: '/admin/promotions', icon: <FiTag className="mr-3 h-5 w-5" /> },

@@ -1,8 +1,10 @@
-import { useState, useEffect, ReactNode, createContext, useContext } from 'react';
-import { Theme, ThemeContextType } from '../types/theme.types';
-
-// Create the context
-export const ThemeContext = createContext<ThemeContextType>({} as ThemeContextType);
+import { useState, useEffect, ReactNode, useContext } from 'react';
+import { Theme } from '../types/theme.types';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '../types/database.types';
+import { ThemeContext } from './context-objects/ThemeContext';
 
 // Custom hook for accessing theme context
 export const useTheme = () => {
@@ -19,8 +21,14 @@ type ThemeProviderProps = {
 
 // Provider component
 export function ThemeProvider({ children }: ThemeProviderProps) {
+  const { user, profile } = useAuth();
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check if theme is stored in localStorage
+    // First check if user has a saved preference in their profile
+    if (profile?.theme_preference && (profile.theme_preference === 'light' || profile.theme_preference === 'dark')) {
+      return profile.theme_preference as Theme;
+    }
+    
+    // Then check if theme is stored in localStorage
     const savedTheme = localStorage.getItem('theme') as Theme;
     if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
       return savedTheme;
@@ -34,6 +42,31 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     // Default to light theme
     return 'light';
   });
+
+  // Save theme to Supabase when it changes and user is logged in
+  useEffect(() => {
+    const saveThemeToProfile = async () => {
+      if (user && profile) {
+        try {
+          // Cast to proper type to fix TypeScript error
+          const typedClient = supabase as SupabaseClient<Database>;
+          
+          const { error } = await typedClient
+            .from('profiles')
+            .update({ theme_preference: theme })
+            .eq('id', user.id);
+            
+          if (error) {
+            console.error('Error saving theme preference:', error);
+          }
+        } catch (err) {
+          console.error('Failed to save theme preference:', err);
+        }
+      }
+    };
+    
+    saveThemeToProfile();
+  }, [theme, user, profile]);
 
   useEffect(() => {
     // Update localStorage when theme changes

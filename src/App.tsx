@@ -25,6 +25,7 @@ const TermsAndConditions = lazy(() => import('./pages/public/TermsAndConditions'
 const PrivacyPolicy = lazy(() => import('./pages/public/PrivacyPolicy'));
 const LegalNotice = lazy(() => import('./pages/public/LegalNotice'));
 const Imprint = lazy(() => import('./pages/public/Imprint'));
+const NailDesigns = lazy(() => import('./pages/public/NailDesigns'));
 const Booking = lazy(() => import('./pages/client/Booking'));
 const BookingSuccess = lazy(() => import('./pages/client/BookingSuccess'));
 
@@ -44,6 +45,8 @@ const AdminReports = lazy(() => import('./pages/admin/Reports'));
 const AdminStaff = lazy(() => import('./pages/admin/Staff'));
 const AdminPromotions = lazy(() => import('./pages/admin/Promotions'));
 const AdminSettings = lazy(() => import('./pages/admin/Settings'));
+const ManageNailDesigns = lazy(() => import('./pages/admin/ManageNailDesigns'));
+const ManageUsers = lazy(() => import('./pages/admin/ManageUsers'));
 
 // Protected route component
 const ProtectedRoute = ({ children, requireAdmin = false }: { children: React.ReactElement, requireAdmin?: boolean }) => {
@@ -67,6 +70,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/designs" element={<NailDesigns />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/booking/:serviceId" element={<Booking />} />
             <Route path="/booking/success" element={<BookingSuccess />} />
@@ -98,11 +102,13 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="calendar" element={<AdminCalendar />} />
             <Route path="clients" element={<AdminClients />} />
+            <Route path="manage-users" element={<ManageUsers />} />
             <Route path="feedbacks" element={<AdminFeedbacks />} />
             <Route path="services" element={<AdminServices />} />
             <Route path="staff" element={<AdminStaff />} />
             <Route path="promotions" element={<AdminPromotions />} />
             <Route path="reports" element={<AdminReports />} />
+            <Route path="nail-designs" element={<ManageNailDesigns />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
         </Routes>

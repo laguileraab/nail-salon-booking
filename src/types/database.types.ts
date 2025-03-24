@@ -215,6 +215,8 @@ export interface Database {
           avatar_url: string | null
           last_login: string | null
           is_active: boolean
+          theme_preference: 'light' | 'dark' | null
+          language_preference: 'en' | 'de' | 'es' | null
         }
         Insert: {
           id: string
@@ -231,6 +233,8 @@ export interface Database {
           avatar_url?: string | null
           last_login?: string | null
           is_active?: boolean
+          theme_preference?: 'light' | 'dark' | null
+          language_preference?: 'en' | 'de' | 'es' | null
         }
         Update: {
           id?: string
@@ -247,6 +251,8 @@ export interface Database {
           avatar_url?: string | null
           last_login?: string | null
           is_active?: boolean
+          theme_preference?: 'light' | 'dark' | null
+          language_preference?: 'en' | 'de' | 'es' | null
         }
         Relationships: [
           {

@@ -8,7 +8,9 @@
     "build": "vite build",
     "build:strict": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "set-admin": "node scripts/set-admin-role.js",
+    "migrate": "supabase migration up"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.4",
